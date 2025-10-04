@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from database.db_manager import DatabaseManager
+from gui.gui_utils import COLORS, FONTS, create_header_frame, create_labeled_entry, create_button, create_divider, create_modal_dialog, create_button_pair
 
 
 class LoginWindow:
@@ -13,155 +14,79 @@ class LoginWindow:
 
         # Window setup
         self.root.title("moreStacks Banking - Login")
-        self.root.geometry("450x700")  # Increased height significantly
+        self.root.geometry("450x700")
         self.root.resizable(False, False)
-
-        # Colors
-        self.primary_color = "#1a237e"
-        self.secondary_color = "#3949ab"
-        self.accent_color = "#00c853"
-        self.bg_color = "#f5f5f5"
-        self.white = "#ffffff"
-
-        self.root.configure(bg=self.bg_color)
+        self.root.configure(bg=COLORS['background'])
 
         self.create_widgets()
 
     def create_widgets(self):
         """Create login interface widgets."""
         # Header
-        header_frame = tk.Frame(self.root, bg=self.primary_color, height=120)
-        header_frame.pack(fill=tk.X)
-        header_frame.pack_propagate(False)
-
-        title = tk.Label(
-            header_frame,
-            text="moreStacks",
-            font=("Helvetica", 36, "bold"),
-            bg=self.primary_color,
-            fg=self.white
-        )
-        title.pack(pady=20)
-
-        subtitle = tk.Label(
-            header_frame,
-            text="Banking Made Simple",
-            font=("Helvetica", 12),
-            bg=self.primary_color,
-            fg=self.white
-        )
-        subtitle.pack()
+        create_header_frame(self.root, "moreStacks", "Banking Made Simple")
 
         # Main frame
-        main_frame = tk.Frame(self.root, bg=self.white, padx=40, pady=30)
+        main_frame = tk.Frame(self.root, bg=COLORS['white'], padx=40, pady=30)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
 
         # Title
         login_title = tk.Label(
             main_frame,
             text="Sign In",
-            font=("Helvetica", 20, "bold"),
-            bg=self.white,
-            fg=self.primary_color
+            font=FONTS['title_small'],
+            bg=COLORS['white'],
+            fg=COLORS['primary']
         )
         login_title.pack(pady=(0, 20))
 
-        # Username
-        username_label = tk.Label(
-            main_frame,
-            text="Username:",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg=self.primary_color
-        )
-        username_label.pack(anchor=tk.W, pady=(10, 5))
-
-        self.username_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID
-        )
-        self.username_entry.pack(fill=tk.X, ipady=8)
-
-        # Password
-        password_label = tk.Label(
-            main_frame,
-            text="Password:",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg=self.primary_color
-        )
-        password_label.pack(anchor=tk.W, pady=(15, 5))
-
-        self.password_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID,
-            show="●"
-        )
-        self.password_entry.pack(fill=tk.X, ipady=8)
+        # Username and Password entries
+        self.username_entry = create_labeled_entry(main_frame, "Username:", pady_top=10)
+        self.password_entry = create_labeled_entry(main_frame, "Password:", show="●", pady_top=15)
 
         # Bind Enter key to login
         self.password_entry.bind('<Return>', lambda e: self.login())
 
         # Login button
-        login_btn = tk.Button(
+        create_button(
             main_frame,
-            text="Sign In",
-            font=("Helvetica", 13, "bold"),
-            bg=self.accent_color,
-            fg=self.white,
-            bd=0,
-            pady=12,
-            cursor="hand2",
-            command=self.login,
-            activebackground="#00e676"
+            "Sign In",
+            self.login,
+            color_key='accent',
+            fill=tk.X,
+            pady=(25, 10)
         )
-        login_btn.pack(fill=tk.X, pady=(25, 10))
 
         # Divider
-        divider_frame = tk.Frame(main_frame, bg=self.white)
-        divider_frame.pack(fill=tk.X, pady=20)
-
-        tk.Frame(divider_frame, bg="#cccccc", height=1).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Label(divider_frame, text=" OR ", bg=self.white, fg="#666666", font=("Helvetica", 10, "bold")).pack(side=tk.LEFT, padx=10)
-        tk.Frame(divider_frame, bg="#cccccc", height=1).pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        create_divider(main_frame, "OR", pady=20)
 
         # New user prompt
         new_user_text = tk.Label(
             main_frame,
             text="Don't have an account?",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg="#333333"
+            font=FONTS['label'],
+            bg=COLORS['white'],
+            fg=COLORS['text_primary']
         )
         new_user_text.pack(pady=(10, 5))
 
-        # Register button - Professional and visible
-        register_btn = tk.Button(
+        # Register button
+        create_button(
             main_frame,
-            text="Create New Account",
-            font=("Helvetica", 13, "bold"),
-            bg=self.secondary_color,  # Professional blue
-            fg=self.white,
-            bd=0,
-            relief=tk.FLAT,
-            pady=14,
-            cursor="hand2",
-            command=self.show_register,
-            activebackground="#5c6bc0"
+            "Create New Account",
+            self.show_register,
+            color_key='secondary',
+            fill=tk.X,
+            pady=(5, 15),
+            padx=5
         )
-        register_btn.pack(fill=tk.X, pady=(5, 15), padx=5)
 
         # Footer
         footer = tk.Label(
             self.root,
             text="© 2025 moreStacks Banking. All rights reserved.",
-            font=("Helvetica", 9),
-            bg=self.bg_color,
-            fg="#666666"
+            font=FONTS['tiny'],
+            bg=COLORS['background'],
+            fg=COLORS['text_secondary']
         )
         footer.pack(pady=10)
 
@@ -203,140 +128,58 @@ class RegisterWindow:
         self.on_success = on_success
 
         # Create new window
-        self.window = tk.Toplevel(parent)
-        self.window.title("moreStacks Banking - Register")
-        self.window.geometry("450x700")  # Increased height to show all fields and buttons
-        self.window.resizable(False, False)
-
-        # Colors
-        self.primary_color = "#1a237e"
-        self.secondary_color = "#3949ab"
-        self.accent_color = "#00c853"
-        self.bg_color = "#f5f5f5"
-        self.white = "#ffffff"
-
-        self.window.configure(bg=self.bg_color)
-
-        # Make window modal
-        self.window.transient(parent)
-        self.window.grab_set()
+        self.window = create_modal_dialog(parent, "moreStacks Banking - Register", 450, 700)
 
         self.create_widgets()
 
     def create_widgets(self):
         """Create registration interface widgets."""
         # Header
-        header_frame = tk.Frame(self.window, bg=self.primary_color, height=100)
+        header_frame = tk.Frame(self.window, bg=COLORS['primary'], height=100)
         header_frame.pack(fill=tk.X)
         header_frame.pack_propagate(False)
 
         title = tk.Label(
             header_frame,
             text="Create Account",
-            font=("Helvetica", 24, "bold"),
-            bg=self.primary_color,
-            fg=self.white
+            font=FONTS['title_medium'],
+            bg=COLORS['primary'],
+            fg=COLORS['white']
         )
         title.pack(pady=30)
 
         # Main frame
-        main_frame = tk.Frame(self.window, bg=self.white, padx=40, pady=30)
+        main_frame = tk.Frame(self.window, bg=COLORS['white'], padx=40, pady=30)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
 
-        # Full Name
-        self._create_field(main_frame, "Full Name:", "full_name_entry")
+        # Full Name, Username, Password, Confirm Password, Email
+        self.full_name_entry = create_labeled_entry(main_frame, "Full Name:", pady_top=0)
+        self.username_entry = create_labeled_entry(main_frame, "Username:")
+        self.password_entry = create_labeled_entry(main_frame, "Password:", show="●")
+        self.confirm_entry = create_labeled_entry(main_frame, "Confirm Password:", show="●")
+        self.email_entry = create_labeled_entry(main_frame, "Email (optional):")
 
-        # Username
-        self._create_field(main_frame, "Username:", "username_entry")
-
-        # Password
-        password_label = tk.Label(
+        # Buttons
+        create_button(
             main_frame,
-            text="Password:",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg=self.primary_color
+            "Create Account",
+            self.register,
+            color_key='accent',
+            fill=tk.X,
+            pady=(25, 10)
         )
-        password_label.pack(anchor=tk.W, pady=(15, 5))
 
-        self.password_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID,
-            show="●"
-        )
-        self.password_entry.pack(fill=tk.X, ipady=8)
-
-        # Confirm Password
-        confirm_label = tk.Label(
-            main_frame,
-            text="Confirm Password:",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg=self.primary_color
-        )
-        confirm_label.pack(anchor=tk.W, pady=(15, 5))
-
-        self.confirm_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID,
-            show="●"
-        )
-        self.confirm_entry.pack(fill=tk.X, ipady=8)
-
-        # Email (optional)
-        self._create_field(main_frame, "Email (optional):", "email_entry")
-
-        # Register button
-        register_btn = tk.Button(
-            main_frame,
-            text="Create Account",
-            font=("Helvetica", 13, "bold"),
-            bg=self.accent_color,
-            fg=self.white,
-            bd=0,
-            pady=12,
-            cursor="hand2",
-            command=self.register,
-            activebackground="#00e676"
-        )
-        register_btn.pack(fill=tk.X, pady=(25, 10))
-
-        # Cancel button
         cancel_btn = tk.Button(
             main_frame,
             text="Cancel",
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg="#666666",
+            font=FONTS['label'],
+            bg=COLORS['white'],
+            fg=COLORS['text_secondary'],
             bd=0,
             cursor="hand2",
             command=self.window.destroy
         )
         cancel_btn.pack()
-
-    def _create_field(self, parent, label_text, entry_name):
-        """Helper to create label and entry field."""
-        label = tk.Label(
-            parent,
-            text=label_text,
-            font=("Helvetica", 11),
-            bg=self.white,
-            fg=self.primary_color
-        )
-        label.pack(anchor=tk.W, pady=(15, 5))
-
-        entry = tk.Entry(
-            parent,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID
-        )
-        entry.pack(fill=tk.X, ipady=8)
-        setattr(self, entry_name, entry)
 
     def register(self):
         """Handle registration."""

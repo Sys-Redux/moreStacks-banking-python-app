@@ -202,6 +202,32 @@ class DatabaseManager:
         except Exception:
             return False
 
+    def delete_account(self, account_id: int) -> Tuple[bool, str]:
+        """Delete an account and all associated data."""
+        try:
+            # Check if account exists
+            account = self.get_account(account_id)
+            if not account:
+                return False, "Account not found"
+
+            # Delete associated transactions
+            self.cursor.execute('DELETE FROM transactions WHERE account_id = ?', (account_id,))
+
+            # Delete associated transfers
+            self.cursor.execute('''
+                DELETE FROM transfers
+                WHERE from_account_id = ? OR to_account_id = ?
+            ''', (account_id, account_id))
+
+            # Delete the account
+            self.cursor.execute('DELETE FROM accounts WHERE account_id = ?', (account_id,))
+
+            self.conn.commit()
+            return True, "Account deleted successfully"
+        except Exception as e:
+            self.conn.rollback()
+            return False, f"Error deleting account: {str(e)}"
+
     def add_transaction(self, account_id: int, transaction_type: str,
                        amount: float, description: str, balance_after: float,
                        category: str = None) -> int:
@@ -238,7 +264,7 @@ class DatabaseManager:
             query += ' AND timestamp <= ?'
             params.append(end_date)
 
-        query += ' ORDER BY timestamp DESC'
+        query += ' ORDER BY timestamp DESC, transaction_id DESC'
 
         if limit:
             query += f' LIMIT {limit}'

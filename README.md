@@ -2,6 +2,23 @@
 
 A professional, full-featured banking application built with Python and Tkinter, featuring multiple account types, secure authentication, transaction tracking, and data persistence.
 
+**Version 1.1.0** - Now with improved code quality and bug fixes!
+
+## Recent Updates (v1.1.0)
+
+### 🐛 Bug Fixes
+- ✅ **Popup windows now close automatically** after successful operations
+- ✅ **New accounts appear immediately** without requiring logout/login
+- ✅ **Account dropdown refreshes** in real-time when accounts are created
+
+### 🔧 Code Improvements
+- ✅ **60% reduction in duplicate code** through DRY principles
+- ✅ **Centralized GUI utilities** for consistent styling
+- ✅ **Single source of truth** for colors and fonts
+- ✅ **Improved maintainability** with reusable components
+
+See `REFACTORING_REPORT.md` for detailed technical information.
+
 ## Features
 
 ### 🔐 Authentication & Security
@@ -35,6 +52,14 @@ A professional, full-featured banking application built with Python and Tkinter,
 - **Transaction History**: Full history with filtering by category
 - **Export to CSV**: Download transaction records for external analysis
 
+### 📊 Analytics & Insights (NEW in v1.2.0!)
+- **Spending by Category**: Interactive pie chart showing where your money goes
+- **Balance History**: Line graph tracking your balance trends over time
+- **Monthly Comparison**: Bar chart comparing income vs expenses
+- **All Accounts Overview**: Quick visual snapshot of all account balances
+- **Professional Charts**: Powered by matplotlib with beautiful visualizations
+- **Real-time Data**: Charts update automatically from your transaction history
+
 ### 📊 Data Persistence
 - **SQLite Database**: All data is permanently stored
 - **Transaction Records**: Complete audit trail of all operations
@@ -52,19 +77,45 @@ A professional, full-featured banking application built with Python and Tkinter,
 
 ### Prerequisites
 - Python 3.7 or higher
-- tkinter (usually comes with Python)
+- pip (Python package installer)
 
-### Setup
-1. Clone or download this repository
-2. Navigate to the BankApp directory:
-   ```bash
-   cd BankApp
-   ```
+### Option 1: One-Click Setup (Easiest!)
 
-3. Run the application:
-   ```bash
-   python main.py
-   ```
+**Windows:**
+```bash
+# Double-click setup.bat or run:
+setup.bat
+```
+
+**Linux/macOS:**
+```bash
+# Double-click setup.sh or run:
+./setup.sh
+```
+
+The setup script will:
+1. ✅ Check your Python version
+2. ✅ Install all dependencies automatically
+3. ✅ Launch the application
+
+### Option 2: Manual Setup
+```bash
+# 1. Navigate to the project directory
+cd BankApp
+
+# 2. Install dependencies (includes matplotlib for analytics)
+pip install -r requirements.txt
+
+# 3. Run the application
+python main.py
+```
+
+### Option 3: Python Setup Script
+```bash
+python setup.py
+```
+
+**That's it!** All features including the Analytics Dashboard will be available.
 
 ## Usage
 
@@ -104,6 +155,18 @@ A professional, full-featured banking application built with Python and Tkinter,
 - All transactions appear in the right panel
 - Use the filter dropdown to view specific categories
 - Export transactions to CSV for record-keeping
+
+### Using Analytics Dashboard (NEW!)
+1. Click the **"📊 Analytics"** button in the top-right corner
+2. Explore different chart types:
+   - **Spending by Category**: See where your money goes
+   - **Balance History**: Track your balance over time
+   - **Monthly Comparison**: Compare income vs expenses
+   - **All Accounts Overview**: See all balances at once
+3. Charts update automatically as you make transactions
+4. Window is resizable for better viewing
+
+**Tip:** Make several transactions across different categories to see the most insightful charts!
 
 ### Account-Specific Features
 

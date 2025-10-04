@@ -3,6 +3,8 @@ from tkinter import messagebox, ttk, filedialog
 from datetime import datetime, timedelta
 from database.db_manager import DatabaseManager
 from models.account import create_account
+from gui.gui_utils import COLORS, FONTS, create_button, create_labeled_entry, create_combobox, create_modal_dialog, create_button_pair, setup_dark_theme
+from gui.charts_window import ChartsWindow
 import csv
 
 
@@ -31,21 +33,14 @@ class MainBankingWindow:
         self.current_account = None
         self.accounts = []
 
+        # Setup dark theme for modern appearance
+        setup_dark_theme()
+
         # Window setup
         self.root.title("moreStacks Banking - Dashboard")
         self.root.geometry("900x750")
         self.root.resizable(False, False)
-
-        # Colors
-        self.primary_color = "#1a237e"
-        self.secondary_color = "#3949ab"
-        self.accent_color = "#00c853"
-        self.bg_color = "#f5f5f5"
-        self.white = "#ffffff"
-        self.warning_color = "#ff9800"
-        self.error_color = "#f44336"
-
-        self.root.configure(bg=self.bg_color)
+        self.root.configure(bg=COLORS['bg_dark'])
 
         self.load_accounts()
         self.create_widgets()
@@ -83,9 +78,9 @@ class MainBankingWindow:
             self.current_account = self.accounts[0]
 
     def create_widgets(self):
-        """Create main interface widgets."""
+        """Create main interface widgets with dark theme."""
         # Header
-        header_frame = tk.Frame(self.root, bg=self.primary_color, height=80)
+        header_frame = tk.Frame(self.root, bg=COLORS['bg_medium'], height=80)
         header_frame.pack(fill=tk.X)
         header_frame.pack_propagate(False)
 
@@ -93,31 +88,31 @@ class MainBankingWindow:
         logo_label = tk.Label(
             header_frame,
             text="moreStacks",
-            font=("Helvetica", 24, "bold"),
-            bg=self.primary_color,
-            fg=self.white
+            font=FONTS['title_medium'],
+            bg=COLORS['bg_medium'],
+            fg=COLORS['accent_blue']
         )
         logo_label.pack(side=tk.LEFT, padx=20, pady=20)
 
         # Right side - User info
-        user_frame = tk.Frame(header_frame, bg=self.primary_color)
+        user_frame = tk.Frame(header_frame, bg=COLORS['bg_medium'])
         user_frame.pack(side=tk.RIGHT, padx=20)
 
         welcome_label = tk.Label(
             user_frame,
             text=f"Welcome, {self.user_info['full_name']}",
-            font=("Helvetica", 12),
-            bg=self.primary_color,
-            fg=self.white
+            font=FONTS['body'],
+            bg=COLORS['bg_medium'],
+            fg=COLORS['text_primary']
         )
         welcome_label.pack(anchor=tk.E)
 
         logout_btn = tk.Button(
             user_frame,
             text="Logout",
-            font=("Helvetica", 9),
-            bg=self.secondary_color,
-            fg=self.white,
+            font=FONTS['tiny'],
+            bg=COLORS['accent_red'],
+            fg=COLORS['text_bright'],
             bd=0,
             padx=15,
             pady=5,
@@ -126,19 +121,34 @@ class MainBankingWindow:
         )
         logout_btn.pack(anchor=tk.E, pady=(5, 0))
 
+        # Analytics button
+        analytics_btn = tk.Button(
+            user_frame,
+            text="📊 Analytics",
+            font=FONTS['tiny'],
+            bg=COLORS['accent_green'],
+            fg=COLORS['bg_dark'],
+            bd=0,
+            padx=15,
+            pady=5,
+            cursor="hand2",
+            command=self.show_analytics
+        )
+        analytics_btn.pack(anchor=tk.E, pady=(5, 0))
+
         # Main content area
-        content_frame = tk.Frame(self.root, bg=self.bg_color)
+        content_frame = tk.Frame(self.root, bg=COLORS['bg_dark'])
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Left panel - Account selection and info
-        left_panel = tk.Frame(content_frame, bg=self.white, width=280)
+        left_panel = tk.Frame(content_frame, bg=COLORS['bg_card'], width=280)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
 
         self.create_left_panel(left_panel)
 
         # Right panel - Transactions
-        right_panel = tk.Frame(content_frame, bg=self.white)
+        right_panel = tk.Frame(content_frame, bg=COLORS['bg_card'])
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         self.create_right_panel(right_panel)
@@ -149,76 +159,80 @@ class MainBankingWindow:
         account_label = tk.Label(
             parent,
             text="My Accounts",
-            font=("Helvetica", 14, "bold"),
-            bg=self.white,
-            fg=self.primary_color
+            font=FONTS['subheading'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_bright']
         )
         account_label.pack(padx=15, pady=(15, 10), anchor=tk.W)
 
         # Account dropdown
-        account_frame = tk.Frame(parent, bg=self.white)
-        account_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        self.account_frame = tk.Frame(parent, bg=COLORS['bg_card'])
+        self.account_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
 
         account_names = [f"{acc.get_account_type()} - {acc.account_number[-4:]}"
                         for acc in self.accounts]
 
-        self.account_var = tk.StringVar()
-        if account_names:
-            self.account_var.set(account_names[0])
-
-        account_dropdown = ttk.Combobox(
-            account_frame,
-            textvariable=self.account_var,
-            values=account_names,
-            state="readonly",
-            font=("Helvetica", 11)
+        self.account_var, self.account_dropdown = create_combobox(
+            self.account_frame,
+            account_names,
+            default=account_names[0] if account_names else None,
+            fill=tk.X
         )
-        account_dropdown.pack(fill=tk.X)
-        account_dropdown.bind("<<ComboboxSelected>>", self.on_account_change)
+        self.account_dropdown.bind("<<ComboboxSelected>>", self.on_account_change)
 
         # Add new account button
-        new_account_btn = tk.Button(
+        create_button(
             parent,
-            text="+ New Account",
-            font=("Helvetica", 10),
-            bg=self.secondary_color,
-            fg=self.white,
-            bd=0,
-            pady=8,
-            cursor="hand2",
-            command=self.create_new_account
+            "➕ New Account",
+            self.create_new_account,
+            color_key='blue',
+            font_key='small',
+            fill=tk.X,
+            padx=15,
+            pady=(0, 5)
         )
-        new_account_btn.pack(fill=tk.X, padx=15, pady=(0, 15))
+
+        # Delete account button
+        create_button(
+            parent,
+            "🗑 Delete Account",
+            self.delete_current_account,
+            color_key='red',
+            font_key='small',
+            fill=tk.X,
+            padx=15,
+            pady=(0, 15)
+        )
 
         # Balance display
-        balance_frame = tk.Frame(parent, bg="#e8eaf6", bd=1, relief=tk.SOLID)
+        balance_frame = tk.Frame(parent, bg=COLORS['bg_light'], bd=2, relief=tk.SOLID, highlightbackground=COLORS['accent_blue'], highlightthickness=1)
         balance_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
 
         balance_title = tk.Label(
             balance_frame,
             text="Current Balance",
-            font=("Helvetica", 10),
-            bg="#e8eaf6",
-            fg="#666666"
+            font=FONTS['small'],
+            bg=COLORS['bg_light'],
+            fg=COLORS['text_secondary']
         )
         balance_title.pack(pady=(10, 0))
 
         self.balance_label = tk.Label(
             balance_frame,
             text="$0.00",
-            font=("Helvetica", 28, "bold"),
-            bg="#e8eaf6",
-            fg=self.accent_color
+            font=('Segoe UI', 32, 'bold'),
+            bg=COLORS['bg_light'],
+            fg=COLORS['accent_green']
         )
-        self.balance_label.pack(pady=(0, 10))
+        self.balance_label.pack(pady=(5, 10))
 
         # Account type info
         self.account_type_label = tk.Label(
             parent,
             text="",
-            font=("Helvetica", 9),
-            bg=self.white,
-            fg="#666666"
+            font=FONTS['tiny'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_secondary']
         )
         self.account_type_label.pack(padx=15, pady=(0, 10))
 
@@ -226,118 +240,92 @@ class MainBankingWindow:
         transaction_title = tk.Label(
             parent,
             text="New Transaction",
-            font=("Helvetica", 12, "bold"),
-            bg=self.white,
-            fg=self.primary_color
+            font=FONTS['body_bold'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_bright']
         )
         transaction_title.pack(padx=15, pady=(15, 10), anchor=tk.W)
 
         # Amount entry
-        amount_label = tk.Label(
-            parent,
-            text="Amount ($):",
-            font=("Helvetica", 10),
-            bg=self.white,
-            fg=self.primary_color
-        )
-        amount_label.pack(padx=15, pady=(5, 2), anchor=tk.W)
-
-        self.amount_entry = tk.Entry(
-            parent,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID
-        )
-        self.amount_entry.pack(fill=tk.X, padx=15, ipady=6)
+        self.amount_entry = create_labeled_entry(parent, "Amount ($):", pady_top=5)
+        self.amount_entry.master.pack(padx=15)
 
         # Category dropdown
         category_label = tk.Label(
             parent,
             text="Category:",
-            font=("Helvetica", 10),
-            bg=self.white,
-            fg=self.primary_color
+            font=FONTS['small'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_primary']
         )
         category_label.pack(padx=15, pady=(10, 2), anchor=tk.W)
 
-        self.category_var = tk.StringVar(value="Uncategorized")
-        category_dropdown = ttk.Combobox(
+        self.category_var, _ = create_combobox(
             parent,
-            textvariable=self.category_var,
-            values=self.TRANSACTION_CATEGORIES,
-            state="readonly",
-            font=("Helvetica", 10)
+            self.TRANSACTION_CATEGORIES,
+            default="Uncategorized",
+            fill=tk.X,
+            padx=15
         )
-        category_dropdown.pack(fill=tk.X, padx=15)
 
         # Buttons
-        button_frame = tk.Frame(parent, bg=self.white)
+        button_frame = tk.Frame(parent, bg=COLORS['bg_card'])
         button_frame.pack(fill=tk.X, padx=15, pady=15)
 
-        deposit_btn = tk.Button(
+        create_button(
             button_frame,
-            text="Deposit",
-            font=("Helvetica", 11, "bold"),
-            bg=self.accent_color,
-            fg=self.white,
-            bd=0,
-            pady=10,
-            cursor="hand2",
-            command=self.deposit_money
+            "💰 Deposit",
+            self.deposit_money,
+            color_key='green',
+            font_key='label',
+            fill=tk.X,
+            pady=(0, 5)
         )
-        deposit_btn.pack(fill=tk.X, pady=(0, 5))
 
-        withdraw_btn = tk.Button(
+        create_button(
             button_frame,
-            text="Withdraw",
-            font=("Helvetica", 11, "bold"),
-            bg=self.secondary_color,
-            fg=self.white,
-            bd=0,
-            pady=10,
-            cursor="hand2",
-            command=self.withdraw_money
+            "💸 Withdraw",
+            self.withdraw_money,
+            color_key='orange',
+            font_key='label',
+            fill=tk.X,
+            pady=(0, 5)
         )
-        withdraw_btn.pack(fill=tk.X, pady=(0, 5))
 
-        transfer_btn = tk.Button(
+        create_button(
             button_frame,
-            text="Transfer",
-            font=("Helvetica", 11, "bold"),
-            bg=self.warning_color,
-            fg=self.white,
-            bd=0,
-            pady=10,
-            cursor="hand2",
-            command=self.transfer_money
+            "💳 Transfer",
+            self.transfer_money,
+            color_key='orange',
+            font_key='label',
+            fill=tk.X,
+            pady=(0, 5)
         )
-        transfer_btn.pack(fill=tk.X)
 
         self.update_account_display()
 
     def create_right_panel(self, parent):
         """Create right panel with transaction history."""
         # Header with export button
-        header_frame = tk.Frame(parent, bg=self.white)
+        header_frame = tk.Frame(parent, bg=COLORS['bg_card'])
         header_frame.pack(fill=tk.X, padx=20, pady=(15, 10))
 
         history_title = tk.Label(
             header_frame,
             text="Transaction History",
-            font=("Helvetica", 14, "bold"),
-            bg=self.white,
-            fg=self.primary_color
+            font=FONTS['subheading'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_bright']
         )
         history_title.pack(side=tk.LEFT)
 
         export_btn = tk.Button(
             header_frame,
-            text="Export CSV",
-            font=("Helvetica", 9),
-            bg=self.white,
-            fg=self.secondary_color,
-            bd=1,
-            relief=tk.SOLID,
+            text="📥 Export CSV",
+            font=FONTS['tiny'],
+            bg=COLORS['accent_blue'],
+            fg=COLORS['bg_dark'],
+            bd=0,
             padx=10,
             pady=5,
             cursor="hand2",
@@ -346,34 +334,30 @@ class MainBankingWindow:
         export_btn.pack(side=tk.RIGHT)
 
         # Filter frame
-        filter_frame = tk.Frame(parent, bg=self.white)
+        filter_frame = tk.Frame(parent, bg=COLORS['bg_card'])
         filter_frame.pack(fill=tk.X, padx=20, pady=(0, 10))
 
         filter_label = tk.Label(
             filter_frame,
             text="Filter by:",
-            font=("Helvetica", 10),
-            bg=self.white,
-            fg="#666666"
+            font=FONTS['small'],
+            bg=COLORS['bg_card'],
+            fg=COLORS['text_secondary']
         )
         filter_label.pack(side=tk.LEFT, padx=(0, 10))
 
-        self.filter_var = tk.StringVar(value="All")
         filter_options = ["All"] + self.TRANSACTION_CATEGORIES
-
-        filter_dropdown = ttk.Combobox(
+        self.filter_var, filter_dropdown = create_combobox(
             filter_frame,
-            textvariable=self.filter_var,
-            values=filter_options,
-            state="readonly",
-            font=("Helvetica", 9),
-            width=15
+            filter_options,
+            default="All",
+            width=15,
+            side=tk.LEFT
         )
-        filter_dropdown.pack(side=tk.LEFT)
         filter_dropdown.bind("<<ComboboxSelected>>", lambda e: self.update_transaction_history())
 
         # Transaction list with scrollbar
-        list_frame = tk.Frame(parent, bg=self.white)
+        list_frame = tk.Frame(parent, bg=COLORS['bg_card'])
         list_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 15))
 
         scrollbar = tk.Scrollbar(list_frame)
@@ -381,11 +365,15 @@ class MainBankingWindow:
 
         self.history_text = tk.Text(
             list_frame,
-            font=("Courier", 9),
-            bg="#fafafa",
-            fg="#333333",
+            font=FONTS['monospace'],
+            bg=COLORS['bg_dark'],
+            fg=COLORS['text_primary'],
+            insertbackground=COLORS['accent_blue'],
             bd=1,
             relief=tk.SOLID,
+            highlightthickness=1,
+            highlightbackground=COLORS['border'],
+            highlightcolor=COLORS['focus'],
             yscrollcommand=scrollbar.set,
             state=tk.DISABLED,
             wrap=tk.WORD
@@ -532,7 +520,19 @@ class MainBankingWindow:
 
     def on_transfer_complete(self):
         """Callback after successful transfer."""
+        # Store current account ID
+        current_acc_id = self.current_account.account_id if self.current_account else None
+
+        # Reload all accounts from database
         self.load_accounts()
+
+        # Find and set the current account again
+        if current_acc_id:
+            for acc in self.accounts:
+                if acc.account_id == current_acc_id:
+                    self.current_account = acc
+                    break
+
         self.update_account_display()
         self.update_transaction_history()
 
@@ -542,12 +542,78 @@ class MainBankingWindow:
 
     def on_new_account_created(self):
         """Callback after new account creation."""
+        # Reload accounts from database
         self.load_accounts()
-        # Update dropdown
+
+        # Update dropdown with new account list
         account_names = [f"{acc.get_account_type()} - {acc.account_number[-4:]}"
                         for acc in self.accounts]
-        self.account_var.set(account_names[-1])  # Select new account
-        self.on_account_change()
+        self.account_dropdown['values'] = account_names
+
+        # Select the newly created account (last in list)
+        if account_names:
+            self.account_var.set(account_names[-1])
+            self.current_account = self.accounts[-1]
+
+        # Update displays
+        self.update_account_display()
+        self.update_transaction_history()
+
+    def delete_current_account(self):
+        """Delete the currently selected account."""
+        if not self.current_account:
+            messagebox.showwarning("Warning", "No account selected.")
+            return
+
+        # Confirm deletion
+        account_info = f"{self.current_account.get_account_type()} - {self.current_account.account_number}"
+        balance = self.current_account.get_balance_formatted()
+
+        confirm = messagebox.askyesno(
+            "Confirm Deletion",
+            f"Are you sure you want to delete this account?\n\n"
+            f"Account: {account_info}\n"
+            f"Balance: {balance}\n\n"
+            f"This action cannot be undone.\n"
+            f"All transaction history will be permanently deleted.",
+            icon='warning'
+        )
+
+        if not confirm:
+            return
+
+        # Check if this is the last account
+        if len(self.accounts) == 1:
+            messagebox.showerror(
+                "Cannot Delete",
+                "You cannot delete your last account.\n"
+                "Create a new account first before deleting this one."
+            )
+            return
+
+        # Perform deletion
+        success, message = self.db.delete_account(self.current_account.account_id)
+
+        if success:
+            messagebox.showinfo("Success", "Account deleted successfully.")
+
+            # Reload accounts and select the first one
+            self.load_accounts()
+
+            if self.accounts:
+                account_names = [f"{acc.get_account_type()} - {acc.account_number[-4:]}"
+                                for acc in self.accounts]
+                self.account_dropdown['values'] = account_names
+                self.account_var.set(account_names[0])
+                self.current_account = self.accounts[0]
+                self.update_account_display()
+                self.update_transaction_history()
+            else:
+                # No accounts left (shouldn't happen due to check above)
+                self.current_account = None
+                self.update_account_display()
+        else:
+            messagebox.showerror("Error", f"Failed to delete account:\n{message}")
 
     def export_transactions(self):
         """Export transactions to CSV file."""
@@ -585,6 +651,10 @@ class MainBankingWindow:
         if messagebox.askyesno("Logout", "Are you sure you want to logout?"):
             self.root.quit()
 
+    def show_analytics(self):
+        """Open analytics dashboard window."""
+        ChartsWindow(self.root, self.user_id, self.db, self.accounts)
+
 
 class TransferDialog:
     """Dialog for transferring money between accounts."""
@@ -595,25 +665,19 @@ class TransferDialog:
         self.db = db
         self.on_success = on_success
 
-        self.window = tk.Toplevel(parent)
-        self.window.title("Transfer Money")
-        self.window.geometry("400x350")
-        self.window.resizable(False, False)
-        self.window.transient(parent)
-        self.window.grab_set()
-
+        self.window = create_modal_dialog(parent, "Transfer Money", 400, 350)
         self.create_widgets()
 
     def create_widgets(self):
         """Create transfer dialog widgets."""
-        main_frame = tk.Frame(self.window, bg="#ffffff", padx=30, pady=20)
+        main_frame = tk.Frame(self.window, bg=COLORS['white'], padx=30, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         title = tk.Label(
             main_frame,
             text="Transfer Money",
-            font=("Helvetica", 16, "bold"),
-            bg="#ffffff"
+            font=FONTS['heading'],
+            bg=COLORS['white']
         )
         title.pack(pady=(0, 20))
 
@@ -621,17 +685,17 @@ class TransferDialog:
         from_label = tk.Label(
             main_frame,
             text=f"From: {self.from_account.get_account_type()} - {self.from_account.account_number[-4:]}",
-            font=("Helvetica", 11),
-            bg="#ffffff"
+            font=FONTS['label'],
+            bg=COLORS['white']
         )
         from_label.pack(anchor=tk.W, pady=(0, 5))
 
         balance_label = tk.Label(
             main_frame,
             text=f"Available: {self.from_account.get_balance_formatted()}",
-            font=("Helvetica", 10),
-            bg="#ffffff",
-            fg="#666666"
+            font=FONTS['small'],
+            bg=COLORS['white'],
+            fg=COLORS['text_secondary']
         )
         balance_label.pack(anchor=tk.W, pady=(0, 15))
 
@@ -639,76 +703,35 @@ class TransferDialog:
         to_label = tk.Label(
             main_frame,
             text="To Account:",
-            font=("Helvetica", 11),
-            bg="#ffffff"
+            font=FONTS['label'],
+            bg=COLORS['white']
         )
         to_label.pack(anchor=tk.W, pady=(0, 5))
 
         account_names = [f"{acc.get_account_type()} - {acc.account_number[-4:]}"
                         for acc in self.all_accounts]
 
-        self.to_account_var = tk.StringVar()
-        if account_names:
-            self.to_account_var.set(account_names[0])
-
-        to_dropdown = ttk.Combobox(
+        self.to_account_var, _ = create_combobox(
             main_frame,
-            textvariable=self.to_account_var,
-            values=account_names,
-            state="readonly",
-            font=("Helvetica", 11)
+            account_names,
+            default=account_names[0] if account_names else None,
+            fill=tk.X,
+            pady=(0, 15)
         )
-        to_dropdown.pack(fill=tk.X, pady=(0, 15))
 
         # Amount
-        amount_label = tk.Label(
-            main_frame,
-            text="Amount ($):",
-            font=("Helvetica", 11),
-            bg="#ffffff"
-        )
-        amount_label.pack(anchor=tk.W, pady=(0, 5))
-
-        self.amount_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID
-        )
-        self.amount_entry.pack(fill=tk.X, ipady=8, pady=(0, 20))
+        self.amount_entry = create_labeled_entry(main_frame, "Amount ($):")
+        self.amount_entry.master.pack(pady=(0, 20))
 
         # Buttons
-        button_frame = tk.Frame(main_frame, bg="#ffffff")
-        button_frame.pack(fill=tk.X)
-
-        transfer_btn = tk.Button(
-            button_frame,
-            text="Transfer",
-            font=("Helvetica", 12, "bold"),
-            bg="#00c853",
-            fg="#ffffff",
-            bd=0,
-            padx=20,
-            pady=10,
-            cursor="hand2",
-            command=self.do_transfer
+        create_button_pair(
+            main_frame,
+            "Transfer",
+            self.do_transfer,
+            "Cancel",
+            self.window.destroy,
+            primary_color='accent'
         )
-        transfer_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
-
-        cancel_btn = tk.Button(
-            button_frame,
-            text="Cancel",
-            font=("Helvetica", 12),
-            bg="#f5f5f5",
-            fg="#666666",
-            bd=1,
-            relief=tk.SOLID,
-            padx=20,
-            pady=10,
-            cursor="hand2",
-            command=self.window.destroy
-        )
-        cancel_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
     def do_transfer(self):
         """Execute the transfer."""
@@ -740,9 +763,10 @@ class TransferDialog:
             )
 
             if success:
-                messagebox.showinfo("Success", "Transfer completed successfully!")
+                # Close dialog first for instant feedback, then show success message
                 self.window.destroy()
-                self.on_success()
+                self.on_success()  # Refresh displays
+                messagebox.showinfo("Success", "Transfer completed successfully!")
             else:
                 messagebox.showerror("Error", message)
         except ValueError:
@@ -757,25 +781,19 @@ class NewAccountDialog:
         self.db = db
         self.on_success = on_success
 
-        self.window = tk.Toplevel(parent)
-        self.window.title("Create New Account")
-        self.window.geometry("400x300")
-        self.window.resizable(False, False)
-        self.window.transient(parent)
-        self.window.grab_set()
-
+        self.window = create_modal_dialog(parent, "Create New Account", 400, 300)
         self.create_widgets()
 
     def create_widgets(self):
         """Create new account dialog widgets."""
-        main_frame = tk.Frame(self.window, bg="#ffffff", padx=30, pady=20)
+        main_frame = tk.Frame(self.window, bg=COLORS['white'], padx=30, pady=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         title = tk.Label(
             main_frame,
             text="Create New Account",
-            font=("Helvetica", 16, "bold"),
-            bg="#ffffff"
+            font=FONTS['heading'],
+            bg=COLORS['white']
         )
         title.pack(pady=(0, 20))
 
@@ -783,72 +801,33 @@ class NewAccountDialog:
         type_label = tk.Label(
             main_frame,
             text="Account Type:",
-            font=("Helvetica", 11),
-            bg="#ffffff"
+            font=FONTS['label'],
+            bg=COLORS['white']
         )
         type_label.pack(anchor=tk.W, pady=(0, 5))
 
-        self.account_type_var = tk.StringVar(value="Checking")
-
-        type_dropdown = ttk.Combobox(
+        self.account_type_var, _ = create_combobox(
             main_frame,
-            textvariable=self.account_type_var,
-            values=["Checking", "Savings", "Credit"],
-            state="readonly",
-            font=("Helvetica", 11)
+            ["Checking", "Savings", "Credit"],
+            default="Checking",
+            fill=tk.X,
+            pady=(0, 15)
         )
-        type_dropdown.pack(fill=tk.X, pady=(0, 15))
 
         # Initial deposit
-        deposit_label = tk.Label(
-            main_frame,
-            text="Initial Deposit ($):",
-            font=("Helvetica", 11),
-            bg="#ffffff"
-        )
-        deposit_label.pack(anchor=tk.W, pady=(0, 5))
-
-        self.deposit_entry = tk.Entry(
-            main_frame,
-            font=("Helvetica", 12),
-            bd=2,
-            relief=tk.SOLID
-        )
+        self.deposit_entry = create_labeled_entry(main_frame, "Initial Deposit ($):")
         self.deposit_entry.insert(0, "0")
-        self.deposit_entry.pack(fill=tk.X, ipady=8, pady=(0, 20))
+        self.deposit_entry.master.pack(pady=(0, 20))
 
         # Buttons
-        button_frame = tk.Frame(main_frame, bg="#ffffff")
-        button_frame.pack(fill=tk.X)
-
-        create_btn = tk.Button(
-            button_frame,
-            text="Create Account",
-            font=("Helvetica", 12, "bold"),
-            bg="#00c853",
-            fg="#ffffff",
-            bd=0,
-            padx=20,
-            pady=10,
-            cursor="hand2",
-            command=self.create_account
+        create_button_pair(
+            main_frame,
+            "Create Account",
+            self.create_account,
+            "Cancel",
+            self.window.destroy,
+            primary_color='accent'
         )
-        create_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
-
-        cancel_btn = tk.Button(
-            button_frame,
-            text="Cancel",
-            font=("Helvetica", 12),
-            bg="#f5f5f5",
-            fg="#666666",
-            bd=1,
-            relief=tk.SOLID,
-            padx=20,
-            pady=10,
-            cursor="hand2",
-            command=self.window.destroy
-        )
-        cancel_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
     def create_account(self):
         """Create the new account."""
@@ -873,10 +852,11 @@ class NewAccountDialog:
             )
 
             if account_id:
+                # Close dialog first for instant feedback, then show success message
+                self.window.destroy()
+                self.on_success()  # Refresh displays
                 messagebox.showinfo("Success",
                     f"New {account_type} account created!\nAccount Number: {account_number}")
-                self.window.destroy()
-                self.on_success()
             else:
                 messagebox.showerror("Error", "Failed to create account.")
         except ValueError:

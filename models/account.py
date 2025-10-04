@@ -153,7 +153,7 @@ class CreditAccount(Account):
         super().__init__(account_id, account_number, account_holder, balance)
         self.credit_limit = credit_limit
         self.interest_rate = interest_rate  # Annual interest rate
-        self._balance = 0  # Start at 0, negative balance means debt
+        # Note: balance is inherited from parent, negative balance means debt
 
     def withdraw(self, amount: float, category: str = None) -> Tuple[bool, str]:
         """Withdraw (borrow) money up to credit limit."""

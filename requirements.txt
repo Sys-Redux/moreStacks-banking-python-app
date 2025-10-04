@@ -1,9 +1,13 @@
-# moreStacks Banking Application Requirements
+# moreStacks Banking Application - Required Dependencies
 
-# Core dependencies (all built-in with Python 3.x)
-# No external packages required!
+# Data Visualization - Required for Analytics Dashboard
+matplotlib>=3.5.0
 
-# The application uses only Python standard library modules:
+# Testing Framework - Required for Development
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Core dependencies (all built-in with Python 3.7+)
 # - tkinter (GUI framework)
 # - sqlite3 (database)
 # - hashlib (password hashing)
@@ -12,8 +16,8 @@
 # - abc (abstract base classes)
 # - typing (type hints)
 
-# Optional: For future enhancements
-# matplotlib>=3.5.0  # For charts and graphs
-# reportlab>=3.6.0   # For PDF report generation
-# bcrypt>=4.0.0      # For better password hashing
-# pillow>=9.0.0      # For image handling in GUI
+# Optional/Future dependencies (uncomment as features are added):
+# reportlab>=3.6.0        # For PDF statement generation
+# bcrypt>=4.0.0           # For better password hashing (recommended)
+# pillow>=9.0.0           # For image handling in GUI
+# python-dateutil>=2.8.0  # For advanced date operations
