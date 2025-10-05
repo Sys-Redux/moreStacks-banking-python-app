@@ -109,7 +109,7 @@ class TestUserManagement:
 
     @pytest.mark.database
     def test_password_hashing(self, temp_db):
-        """Test passwords are hashed."""
+        """Test passwords are hashed with bcrypt."""
         user_id = temp_db.create_user("hashtest", "plaintext", "Hash Test", "hash@test.com")
 
         # Check database directly - password should not be plain text
@@ -118,7 +118,9 @@ class TestUserManagement:
         stored_password = cursor.fetchone()[0]
 
         assert stored_password != "plaintext"
-        assert len(stored_password) == 64  # SHA-256 produces 64 hex characters
+        # bcrypt hashes start with $2b$ and are at least 60 characters
+        assert stored_password.startswith('$2b$')
+        assert len(stored_password) >= 60
 
 
 class TestAccountManagement:

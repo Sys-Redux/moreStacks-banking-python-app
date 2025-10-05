@@ -5,6 +5,7 @@ from database.db_manager import DatabaseManager
 from models.account import create_account
 from gui.gui_utils import COLORS, FONTS, create_button, create_labeled_entry, create_combobox, create_modal_dialog, create_button_pair, setup_dark_theme
 from gui.charts_window import ChartsWindow
+from utils.interest_scheduler import InterestScheduler
 import csv
 
 
@@ -302,6 +303,18 @@ class MainBankingWindow:
             pady=(0, 5)
         )
 
+        # Apply Interest button (only for Savings accounts)
+        self.interest_button = create_button(
+            button_frame,
+            "💵 Apply Interest",
+            self.apply_interest_to_account,
+            color_key='green',
+            font_key='label',
+            fill=tk.X,
+            pady=(0, 5)
+        )
+        self.interest_button.pack_forget()  # Hide by default
+
         self.update_account_display()
 
     def create_right_panel(self, parent):
@@ -392,6 +405,13 @@ class MainBankingWindow:
                 self.current_account = acc
                 break
 
+        # Show/hide interest button based on account type
+        if hasattr(self, 'interest_button'):
+            if self.current_account and self.current_account.get_account_type() == "Savings":
+                self.interest_button.pack(fill=tk.X, pady=(0, 5))
+            else:
+                self.interest_button.pack_forget()
+
         self.update_account_display()
         self.update_transaction_history()
 
@@ -408,6 +428,35 @@ class MainBankingWindow:
 
         if hasattr(self.current_account, 'interest_rate'):
             info_text += f"\nInterest: {self.current_account.interest_rate*100:.2f}%"
+
+            # For Savings accounts, show interest schedule info
+            if self.current_account.get_account_type() == "Savings":
+                # Get last interest date from database
+                account_data = self.db.get_account(self.current_account.account_id)
+                last_interest = account_data.get('last_interest_date') if account_data else None
+
+                # Check if interest should be applied
+                if InterestScheduler.should_apply_interest(last_interest):
+                    days_since = InterestScheduler.calculate_days_since_last_interest(last_interest)
+                    if days_since == float('inf'):
+                        info_text += f"\n⚠️  Interest due (never applied)"
+                    else:
+                        info_text += f"\n⚠️  Interest due ({days_since} days overdue)"
+
+                    # Calculate and show pending interest
+                    pending = InterestScheduler.calculate_interest_amount(
+                        self.current_account.get_balance(),
+                        self.current_account.interest_rate,
+                        min(days_since, 30) if days_since != float('inf') else 30
+                    )
+                    if pending > 0:
+                        info_text += f"\nPending Interest: ${pending:.2f}"
+                else:
+                    # Show next interest date
+                    next_date = InterestScheduler.format_next_interest_date(last_interest)
+                    days_until = InterestScheduler.get_days_until_interest(last_interest)
+                    info_text += f"\nNext Interest: {next_date} ({days_until} days)"
+
         if hasattr(self.current_account, 'credit_limit'):
             info_text += f"\nCredit Limit: ${self.current_account.credit_limit:.2f}"
             info_text += f"\nAvailable: ${self.current_account.get_available_credit():.2f}"
@@ -517,6 +566,44 @@ class MainBankingWindow:
             return
 
         TransferDialog(self.root, self.current_account, self.accounts, self.db, self.on_transfer_complete)
+
+    def apply_interest_to_account(self):
+        """Apply monthly interest to the current savings account."""
+        if not self.current_account or self.current_account.get_account_type() != "Savings":
+            return
+
+        # Get account data from database
+        account_data = self.db.get_account(self.current_account.account_id)
+        last_interest = account_data.get('last_interest_date') if account_data else None
+
+        # Calculate days since last interest
+        if last_interest:
+            days_since = InterestScheduler.calculate_days_since_last_interest(last_interest)
+        else:
+            days_since = 30  # Default to 30 days if never applied
+
+        # Apply interest
+        success, message = self.current_account.apply_interest(days=min(days_since, 30))
+
+        if success:
+            # Update balance in database
+            self.db.update_balance(
+                self.current_account.account_id,
+                self.current_account.get_balance()
+            )
+
+            # Update last interest date
+            self.db.update_last_interest_date(
+                self.current_account.account_id,
+                datetime.now().isoformat()
+            )
+
+            # Reload account to update transaction history
+            self.on_transfer_complete()
+
+            messagebox.showinfo("Interest Applied", message)
+        else:
+            messagebox.showwarning("No Interest", message)
 
     def on_transfer_complete(self):
         """Callback after successful transfer."""

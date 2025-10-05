@@ -3,6 +3,9 @@
 # Data Visualization - Required for Analytics Dashboard
 matplotlib>=3.5.0
 
+# Security - Password Hashing with bcrypt (Version 2.4+)
+bcrypt>=4.0.0
+
 # Testing Framework - Required for Development
 pytest>=7.4.0
 pytest-cov>=4.1.0
@@ -10,14 +13,13 @@ pytest-cov>=4.1.0
 # Core dependencies (all built-in with Python 3.7+)
 # - tkinter (GUI framework)
 # - sqlite3 (database)
-# - hashlib (password hashing)
 # - datetime (timestamp handling)
 # - csv (transaction export)
 # - abc (abstract base classes)
 # - typing (type hints)
+# - re (regular expressions for password validation)
 
 # Optional/Future dependencies (uncomment as features are added):
 # reportlab>=3.6.0        # For PDF statement generation
-# bcrypt>=4.0.0           # For better password hashing (recommended)
 # pillow>=9.0.0           # For image handling in GUI
 # python-dateutil>=2.8.0  # For advanced date operations

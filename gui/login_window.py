@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
+from datetime import datetime
 from database.db_manager import DatabaseManager
+from utils.password_validator import PasswordValidator
 from gui.gui_utils import COLORS, FONTS, create_header_frame, create_labeled_entry, create_button, create_divider, create_modal_dialog, create_button_pair
 
 
@@ -91,12 +93,23 @@ class LoginWindow:
         footer.pack(pady=10)
 
     def login(self):
-        """Handle login attempt."""
+        """Handle login attempt with account lockout protection."""
         username = self.username_entry.get().strip()
         password = self.password_entry.get()
 
         if not username or not password:
             messagebox.showerror("Error", "Please enter both username and password.")
+            return
+
+        # Check if account is locked
+        is_locked, unlock_time = self.db.is_account_locked(username)
+        if is_locked:
+            minutes_left = int((unlock_time - datetime.now()).total_seconds() / 60)
+            messagebox.showerror(
+                "Account Locked",
+                f"Account is locked due to multiple failed login attempts.\n"
+                f"Please try again in {minutes_left} minute(s)."
+            )
             return
 
         user_id = self.db.authenticate_user(username, password)
@@ -105,7 +118,11 @@ class LoginWindow:
             user_info = self.db.get_user_info(user_id)
             self.on_login_success(user_id, user_info)
         else:
-            messagebox.showerror("Login Failed", "Invalid username or password.")
+            messagebox.showerror(
+                "Login Failed",
+                "Invalid username or password.\n"
+                "Note: Account will be locked for 15 minutes after 5 failed attempts."
+            )
             self.password_entry.delete(0, tk.END)
 
     def show_register(self):
@@ -182,7 +199,7 @@ class RegisterWindow:
         cancel_btn.pack()
 
     def register(self):
-        """Handle registration."""
+        """Handle registration with password strength validation."""
         full_name = self.full_name_entry.get().strip()
         username = self.username_entry.get().strip()
         password = self.password_entry.get()
@@ -198,13 +215,25 @@ class RegisterWindow:
             messagebox.showerror("Error", "Username must be at least 3 characters.")
             return
 
-        if len(password) < 6:
-            messagebox.showerror("Error", "Password must be at least 6 characters.")
+        # Validate password strength
+        is_valid, message = PasswordValidator.validate_password(password)
+        if not is_valid:
+            messagebox.showerror("Weak Password", f"{message}\n\nPassword Requirements:\n{PasswordValidator.get_requirements_text()}")
             return
 
         if password != confirm:
             messagebox.showerror("Error", "Passwords do not match.")
             return
+
+        # Show password strength feedback
+        strength = PasswordValidator.get_password_strength(password)
+        if strength == "Weak":
+            if not messagebox.askyesno(
+                "Weak Password",
+                "Your password is weak. We recommend choosing a stronger password.\n\n"
+                "Do you want to continue anyway?"
+            ):
+                return
 
         # Create user
         user_id = self.db.create_user(username, password, full_name, email)
@@ -212,7 +241,7 @@ class RegisterWindow:
         if user_id:
             # Create default checking account
             account_id, account_number = self.db.create_account(
-                user_id, 'checking', 0
+                user_id, 'Checking', 0
             )
 
             user_info = self.db.get_user_info(user_id)

@@ -1,7 +1,7 @@
 import sqlite3
-import hashlib
+import bcrypt
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 
 
@@ -34,7 +34,9 @@ class DatabaseManager:
                 email TEXT,
                 phone TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                last_login TEXT
+                last_login TEXT,
+                failed_login_attempts INTEGER DEFAULT 0,
+                account_locked_until TEXT
             )
         ''')
 
@@ -50,6 +52,7 @@ class DatabaseManager:
                 credit_limit REAL DEFAULT 0,
                 status TEXT DEFAULT 'active',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_interest_date TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
             )
         ''')
@@ -84,11 +87,71 @@ class DatabaseManager:
         ''')
 
         self.conn.commit()
+        self._migrate_existing_tables()
+
+    def _migrate_existing_tables(self):
+        """Add new columns to existing tables if they don't exist."""
+        try:
+            # Check if failed_login_attempts column exists in users table
+            self.cursor.execute("PRAGMA table_info(users)")
+            columns = [column[1] for column in self.cursor.fetchall()]
+
+            if 'failed_login_attempts' not in columns:
+                self.cursor.execute('''
+                    ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0
+                ''')
+
+            if 'account_locked_until' not in columns:
+                self.cursor.execute('''
+                    ALTER TABLE users ADD COLUMN account_locked_until TEXT
+                ''')
+
+            # Check if last_interest_date column exists in accounts table
+            self.cursor.execute("PRAGMA table_info(accounts)")
+            columns = [column[1] for column in self.cursor.fetchall()]
+
+            if 'last_interest_date' not in columns:
+                self.cursor.execute('''
+                    ALTER TABLE accounts ADD COLUMN last_interest_date TEXT
+                ''')
+
+            self.conn.commit()
+        except Exception as e:
+            # Columns already exist or other error
+            pass
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash a password using SHA-256."""
-        return hashlib.sha256(password.encode()).hexdigest()
+        """
+        Hash a password using bcrypt.
+
+        Args:
+            password: Plain text password
+
+        Returns:
+            Hashed password as a string
+        """
+        # Generate salt and hash password
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
+
+    @staticmethod
+    def verify_password(password: str, hashed_password: str) -> bool:
+        """
+        Verify a password against a hashed password.
+
+        Args:
+            password: Plain text password to verify
+            hashed_password: Hashed password to verify against
+
+        Returns:
+            True if password matches, False otherwise
+        """
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+        except Exception:
+            return False
 
     def create_user(self, username: str, password: str, full_name: str,
                    email: str = None, phone: str = None) -> Optional[int]:
@@ -105,23 +168,109 @@ class DatabaseManager:
             return None  # Username already exists
 
     def authenticate_user(self, username: str, password: str) -> Optional[int]:
-        """Authenticate a user and return user_id if successful."""
-        password_hash = self.hash_password(password)
+        """
+        Authenticate a user and return user_id if successful.
+        Implements account lockout after 5 failed attempts (15 minute lockout).
+
+        Args:
+            username: User's username
+            password: User's plain text password
+
+        Returns:
+            user_id if authentication successful, None otherwise
+        """
+        # Get user data including lockout information
         self.cursor.execute('''
-            SELECT user_id FROM users
-            WHERE username = ? AND password_hash = ?
-        ''', (username, password_hash))
+            SELECT user_id, password_hash, failed_login_attempts, account_locked_until
+            FROM users
+            WHERE username = ?
+        ''', (username,))
         result = self.cursor.fetchone()
 
-        if result:
-            user_id = result[0]
-            # Update last login
+        if not result:
+            return None  # User not found
+
+        user_id, password_hash, failed_attempts, locked_until = result
+
+        # Check if account is locked
+        if locked_until:
+            lockout_time = datetime.fromisoformat(locked_until)
+            if datetime.now() < lockout_time:
+                # Account is still locked
+                return None
+            else:
+                # Lockout period expired, reset counters
+                self.cursor.execute('''
+                    UPDATE users
+                    SET failed_login_attempts = 0, account_locked_until = NULL
+                    WHERE user_id = ?
+                ''', (user_id,))
+                self.conn.commit()
+                failed_attempts = 0
+
+        # Verify password using bcrypt
+        if self.verify_password(password, password_hash):
+            # Successful login - reset failed attempts and update last login
             self.cursor.execute('''
-                UPDATE users SET last_login = ? WHERE user_id = ?
+                UPDATE users
+                SET last_login = ?, failed_login_attempts = 0, account_locked_until = NULL
+                WHERE user_id = ?
             ''', (datetime.now().isoformat(), user_id))
             self.conn.commit()
             return user_id
-        return None
+        else:
+            # Failed login - increment counter
+            failed_attempts += 1
+
+            if failed_attempts >= 5:
+                # Lock account for 15 minutes
+                lockout_until = datetime.now() + timedelta(minutes=15)
+                self.cursor.execute('''
+                    UPDATE users
+                    SET failed_login_attempts = ?, account_locked_until = ?
+                    WHERE user_id = ?
+                ''', (failed_attempts, lockout_until.isoformat(), user_id))
+            else:
+                # Just increment failed attempts
+                self.cursor.execute('''
+                    UPDATE users
+                    SET failed_login_attempts = ?
+                    WHERE user_id = ?
+                ''', (failed_attempts, user_id))
+
+            self.conn.commit()
+            return None
+
+    def is_account_locked(self, username: str) -> Tuple[bool, Optional[datetime]]:
+        """
+        Check if a user account is locked.
+
+        Args:
+            username: User's username
+
+        Returns:
+            Tuple of (is_locked, unlock_time)
+        """
+        self.cursor.execute('''
+            SELECT account_locked_until, failed_login_attempts
+            FROM users
+            WHERE username = ?
+        ''', (username,))
+        result = self.cursor.fetchone()
+
+        if not result:
+            return False, None
+
+        locked_until, failed_attempts = result
+
+        if not locked_until:
+            return False, None
+
+        lockout_time = datetime.fromisoformat(locked_until)
+        if datetime.now() < lockout_time:
+            return True, lockout_time
+
+        return False, None
 
     def get_user_info(self, user_id: int) -> Optional[Dict]:
         """Get user information."""
@@ -185,7 +334,7 @@ class DatabaseManager:
         """Get account details."""
         self.cursor.execute('''
             SELECT account_id, user_id, account_number, account_type, balance,
-                   interest_rate, credit_limit, status, created_at
+                   interest_rate, credit_limit, status, created_at, last_interest_date
             FROM accounts WHERE account_id = ?
         ''', (account_id,))
         result = self.cursor.fetchone()
@@ -346,6 +495,56 @@ class DatabaseManager:
             params.append(start_date)
 
         query += ' GROUP BY category ORDER BY total DESC'
+
+        self.cursor.execute(query, params)
+        return [dict(row) for row in self.cursor.fetchall()]
+
+    def update_last_interest_date(self, account_id: int, date: str = None) -> bool:
+        """
+        Update the last interest application date for an account.
+
+        Args:
+            account_id: ID of the account
+            date: ISO format date string (defaults to now)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if date is None:
+                date = datetime.now().isoformat()
+
+            self.cursor.execute('''
+                UPDATE accounts SET last_interest_date = ? WHERE account_id = ?
+            ''', (date, account_id))
+            self.conn.commit()
+            return True
+        except Exception:
+            return False
+
+    def get_savings_accounts_for_interest(self, user_id: int = None) -> List[Dict]:
+        """
+        Get all savings accounts that may be eligible for interest.
+
+        Args:
+            user_id: Optional user ID to filter by specific user
+
+        Returns:
+            List of account dictionaries with interest information
+        """
+        query = '''
+            SELECT account_id, user_id, account_number, balance,
+                   interest_rate, last_interest_date, created_at
+            FROM accounts
+            WHERE account_type = 'Savings' AND status = 'active'
+        '''
+        params = []
+
+        if user_id:
+            query += ' AND user_id = ?'
+            params.append(user_id)
+
+        query += ' ORDER BY last_interest_date ASC NULLS FIRST'
 
         self.cursor.execute(query, params)
         return [dict(row) for row in self.cursor.fetchall()]
