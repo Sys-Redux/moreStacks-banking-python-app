@@ -37,22 +37,25 @@ class PasswordValidator:
             return False, f"Password must be at least {cls.MIN_LENGTH} characters long"
 
         # Check for uppercase letter
-        if cls.REQUIRE_UPPERCASE and not re.search(r'[A-Z]', password):
+        if cls.REQUIRE_UPPERCASE and not re.search(r"[A-Z]", password):
             return False, "Password must contain at least one uppercase letter"
 
         # Check for lowercase letter
-        if cls.REQUIRE_LOWERCASE and not re.search(r'[a-z]', password):
+        if cls.REQUIRE_LOWERCASE and not re.search(r"[a-z]", password):
             return False, "Password must contain at least one lowercase letter"
 
         # Check for digit
-        if cls.REQUIRE_DIGIT and not re.search(r'\d', password):
+        if cls.REQUIRE_DIGIT and not re.search(r"\d", password):
             return False, "Password must contain at least one digit"
 
         # Check for special character
         if cls.REQUIRE_SPECIAL:
             special_pattern = f"[{re.escape(cls.SPECIAL_CHARACTERS)}]"
             if not re.search(special_pattern, password):
-                return False, f"Password must contain at least one special character ({cls.SPECIAL_CHARACTERS})"
+                return (
+                    False,
+                    f"Password must contain at least one special character ({cls.SPECIAL_CHARACTERS})",
+                )
 
         # All checks passed
         return True, "Password meets all security requirements"
@@ -82,22 +85,24 @@ class PasswordValidator:
             strength_score += 1
 
         # Character type scoring
-        if re.search(r'[a-z]', password):
+        if re.search(r"[a-z]", password):
             strength_score += 1
-        if re.search(r'[A-Z]', password):
+        if re.search(r"[A-Z]", password):
             strength_score += 1
-        if re.search(r'\d', password):
+        if re.search(r"\d", password):
             strength_score += 1
         if re.search(f"[{re.escape(cls.SPECIAL_CHARACTERS)}]", password):
             strength_score += 1
 
         # Variety scoring (multiple character types)
-        char_types = sum([
-            bool(re.search(r'[a-z]', password)),
-            bool(re.search(r'[A-Z]', password)),
-            bool(re.search(r'\d', password)),
-            bool(re.search(f"[{re.escape(cls.SPECIAL_CHARACTERS)}]", password))
-        ])
+        char_types = sum(
+            [
+                bool(re.search(r"[a-z]", password)),
+                bool(re.search(r"[A-Z]", password)),
+                bool(re.search(r"\d", password)),
+                bool(re.search(f"[{re.escape(cls.SPECIAL_CHARACTERS)}]", password)),
+            ]
+        )
 
         if char_types >= 3:
             strength_score += 1
@@ -117,9 +122,7 @@ class PasswordValidator:
     @classmethod
     def get_requirements_text(cls) -> str:
         """Get a formatted string describing password requirements."""
-        requirements = [
-            f"• At least {cls.MIN_LENGTH} characters long"
-        ]
+        requirements = [f"• At least {cls.MIN_LENGTH} characters long"]
 
         if cls.REQUIRE_UPPERCASE:
             requirements.append("• At least one uppercase letter (A-Z)")
@@ -128,6 +131,8 @@ class PasswordValidator:
         if cls.REQUIRE_DIGIT:
             requirements.append("• At least one digit (0-9)")
         if cls.REQUIRE_SPECIAL:
-            requirements.append(f"• At least one special character ({cls.SPECIAL_CHARACTERS})")
+            requirements.append(
+                f"• At least one special character ({cls.SPECIAL_CHARACTERS})"
+            )
 
         return "\n".join(requirements)

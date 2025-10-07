@@ -2,8 +2,14 @@
 Unit Tests for Account Models
 Tests CheckingAccount, SavingsAccount, and CreditAccount classes
 """
+
 import pytest
-from models.account import CheckingAccount, SavingsAccount, CreditAccount, create_account
+from models.account import (
+    CheckingAccount,
+    SavingsAccount,
+    CreditAccount,
+    create_account,
+)
 
 
 class TestCheckingAccount:
@@ -93,8 +99,8 @@ class TestCheckingAccount:
         checking_account.withdraw(100.0)
 
         assert len(checking_account.transaction_history) == 2
-        assert checking_account.transaction_history[0]['type'] == 'Deposit'
-        assert checking_account.transaction_history[1]['type'] == 'Withdrawal'
+        assert checking_account.transaction_history[0]["type"] == "Deposit"
+        assert checking_account.transaction_history[1]["type"] == "Withdrawal"
 
     @pytest.mark.unit
     def test_balance_property(self, checking_account):
@@ -168,7 +174,7 @@ class TestSavingsAccount:
         success, message = savings_account.withdraw(6000.0)
 
         assert success is False
-        assert ("insufficient" in message.lower() or "minimum balance" in message.lower())
+        assert "insufficient" in message.lower() or "minimum balance" in message.lower()
 
     @pytest.mark.unit
     def test_interest_calculation(self, savings_account):
@@ -271,7 +277,7 @@ class TestCreditAccount:
             account_number="CRD999",
             account_holder="Test User",
             balance=-250.0,  # Has $250 debt
-            credit_limit=5000.0
+            credit_limit=5000.0,
         )
 
         # Balance should be preserved (not reset to 0)
@@ -288,7 +294,7 @@ class TestAccountFactory:
     @pytest.mark.unit
     def test_create_checking_account(self):
         """Test factory creates checking account."""
-        account = create_account('checking', 1, 'CHK001', 'Test User', 1000.0)
+        account = create_account("checking", 1, "CHK001", "Test User", 1000.0)
 
         assert isinstance(account, CheckingAccount)
         assert account.get_account_type() == "CheckingAccount"
@@ -296,7 +302,9 @@ class TestAccountFactory:
     @pytest.mark.unit
     def test_create_savings_account(self):
         """Test factory creates savings account."""
-        account = create_account('savings', 2, 'SAV001', 'Test User', 5000.0, interest_rate=2.5)
+        account = create_account(
+            "savings", 2, "SAV001", "Test User", 5000.0, interest_rate=2.5
+        )
 
         assert isinstance(account, SavingsAccount)
         assert account.get_account_type() == "SavingsAccount"
@@ -305,7 +313,9 @@ class TestAccountFactory:
     @pytest.mark.unit
     def test_create_credit_account(self):
         """Test factory creates credit account."""
-        account = create_account('credit', 3, 'CRD001', 'Test User', 0.0, credit_limit=3000.0)
+        account = create_account(
+            "credit", 3, "CRD001", "Test User", 0.0, credit_limit=3000.0
+        )
 
         assert isinstance(account, CreditAccount)
         assert account.get_account_type() == "CreditAccount"
@@ -315,7 +325,7 @@ class TestAccountFactory:
     def test_create_invalid_account_type(self):
         """Test factory with invalid account type."""
         with pytest.raises(ValueError):
-            create_account('invalid', 1, 'INV001', 'Test User', 0.0)
+            create_account("invalid", 1, "INV001", "Test User", 0.0)
 
 
 class TestAccountEdgeCases:

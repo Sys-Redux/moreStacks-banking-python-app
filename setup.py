@@ -8,6 +8,7 @@ import subprocess
 import sys
 import os
 
+
 def print_header():
     """Print welcome header."""
     print("=" * 60)
@@ -15,6 +16,7 @@ def print_header():
     print("  Banking Made Simple")
     print("=" * 60)
     print()
+
 
 def check_python_version():
     """Check if Python version is compatible."""
@@ -26,6 +28,7 @@ def check_python_version():
     print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor} detected")
     print()
 
+
 def install_dependencies():
     """Install required dependencies."""
     print("Installing dependencies...")
@@ -33,9 +36,9 @@ def install_dependencies():
     print()
 
     try:
-        subprocess.check_call([
-            sys.executable, "-m", "pip", "install", "-r", "requirements.txt"
-        ])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"]
+        )
         print()
         print("✅ All dependencies installed successfully!")
         print()
@@ -43,6 +46,7 @@ def install_dependencies():
         print("❌ Error installing dependencies.")
         print("   Please try manually: pip install -r requirements.txt")
         sys.exit(1)
+
 
 def launch_app():
     """Launch the banking application."""
@@ -57,6 +61,7 @@ def launch_app():
         print("\n\n👋 Thanks for using moreStacks Banking!")
         sys.exit(0)
 
+
 def main():
     """Main setup flow."""
     print_header()
@@ -65,12 +70,14 @@ def main():
     # Check if dependencies are already installed
     try:
         import matplotlib
+
         print("✅ Dependencies already installed")
         print()
     except ImportError:
         install_dependencies()
 
     launch_app()
+
 
 if __name__ == "__main__":
     main()

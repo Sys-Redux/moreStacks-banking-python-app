@@ -2,28 +2,38 @@
 
 A professional, full-featured banking application built with Python and Tkinter, featuring multiple account types, secure authentication, transaction tracking, and data persistence.
 
-**Version 1.1.0** - Now with improved code quality and bug fixes!
+**Version 2.5.0** - Now with Session Management & Timeout Security!
 
-## Recent Updates (v1.1.0)
+## Recent Updates (v2.5.0)
 
-### 🐛 Bug Fixes
+### 🔒 Session Management & Security
+- ✅ **Automatic session timeout** (15 minutes default, configurable)
+- ✅ **Activity-based tracking** - Mouse/keyboard activity resets timer
+- ✅ **Session warning system** - Alert 1 minute before expiration
+- ✅ **Automatic logout** - Secure cleanup on session expiration
+- ✅ **Background cleanup** - Expired sessions removed every 60 seconds
+- ✅ **50 comprehensive tests** - Full coverage of session functionality
+
+See [`docs/RELEASE_NOTES_V2.5.md`](docs/RELEASE_NOTES_V2.5.md) for complete details.
+
+### 🐛 Previous Updates (v1.1.0)
 - ✅ **Popup windows now close automatically** after successful operations
 - ✅ **New accounts appear immediately** without requiring logout/login
 - ✅ **Account dropdown refreshes** in real-time when accounts are created
-
-### 🔧 Code Improvements
 - ✅ **60% reduction in duplicate code** through DRY principles
 - ✅ **Centralized GUI utilities** for consistent styling
-- ✅ **Single source of truth** for colors and fonts
-- ✅ **Improved maintainability** with reusable components
 
 See `REFACTORING_REPORT.md` for detailed technical information.
 
 ## Features
 
 ### 🔐 Authentication & Security
-- **User Registration & Login**: Secure user account creation with password hashing (SHA-256)
-- **Session Management**: Proper authentication flow with logout functionality
+- **User Registration & Login**: Secure user account creation with bcrypt password hashing
+- **Session Management**: Automatic timeout after 15 minutes of inactivity
+- **Activity Tracking**: Mouse/keyboard activity extends session automatically
+- **Session Warnings**: Alert before timeout with option to extend
+- **Account Lockout**: Protection against brute force (5 failed attempts, 15-minute lockout)
+- **Password Validation**: Strong password requirements enforced
 - **Multi-user Support**: Each user can have multiple bank accounts
 
 ### 💳 Account Types
@@ -186,19 +196,44 @@ python setup.py
 ```
 BankApp/
 ├── main.py                 # Application entry point
-├── database/
+├── config.py               # Configuration file (account defaults, security settings)
+├── README.md              # This file
+│
+├── database/              # Database layer
 │   ├── __init__.py
 │   └── db_manager.py       # SQLite database operations
-├── models/
+│
+├── models/                # Business logic
 │   ├── __init__.py
 │   └── account.py          # Account classes (Checking, Savings, Credit)
-├── gui/
+│
+├── gui/                   # User interface
 │   ├── __init__.py
+│   ├── gui_utils.py        # Shared GUI utilities and styling
 │   ├── login_window.py     # Login and registration interface
-│   └── main_window.py      # Main banking dashboard
-├── BankAccount.py          # Original simple version (deprecated)
-├── instructions.md         # Development roadmap
-└── README.md              # This file
+│   ├── main_window.py      # Main banking dashboard
+│   └── charts_window.py    # Analytics and data visualization
+│
+├── utils/                 # Utility functions
+│   ├── password_validator.py  # Password strength validation
+│   └── interest_scheduler.py  # Automated interest calculation
+│
+├── tests/                 # Test suite (120 tests, 84% coverage)
+│   ├── test_accounts.py    # Account model tests (34 tests)
+│   ├── test_database.py    # Database operation tests (31 tests)
+│   ├── test_integration.py # End-to-end tests (11 tests)
+│   ├── test_security.py    # Security feature tests (20 tests)
+│   └── test_interest.py    # Interest system tests (21 tests)
+│
+└── docs/                  # 📚 Documentation
+    ├── RoadMap.md          # Strategic development roadmap
+    ├── QUICKSTART.md       # 60-second getting started guide
+    ├── INSTALLATION.md     # Detailed installation instructions
+    ├── TESTING.md          # Testing guide and best practices
+    ├── SECURITY.md         # Security implementation guide (439 lines)
+    ├── INTEREST.md         # Interest automation guide (368 lines)
+    ├── RELEASE_NOTES_V2.4.md  # Version 2.4 changelog
+    └── CLEANUP_SUMMARY.md  # Recent refactoring documentation
 ```
 
 ## Database Schema
@@ -257,24 +292,63 @@ BankApp/
 5. **Track**: View filtered transaction history
 6. **Export**: Download CSV report
 
+## Configuration
+
+The application uses `config.py` for centralized configuration:
+
+### Customizable Settings
+- **Account Defaults**: Overdraft limits, interest rates, credit limits
+- **Security Settings**: Password requirements, lockout duration, bcrypt rounds
+- **Interest Automation**: Cycle days, calculation parameters
+- **Transaction Categories**: Customizable category list
+- **GUI Settings**: Window dimensions, currency formatting, date formats
+
+To customize, edit `config.py` and restart the application. All settings are documented with comments.
+
 ## Security Notes
 
-⚠️ **For Educational/Demo Purposes**
-- Password hashing uses SHA-256 (for production, use bcrypt or similar)
-- No SSL/TLS for database (use encryption for production)
-- Session management is basic (implement proper sessions for production)
+✅ **Version 2.5 Security Features**
+- **Session timeout** management (15-minute default, configurable)
+- **Activity tracking** - Automatic session extension on user activity
+- **Session warnings** - Alert 1 minute before expiration with extend option
+- **Automatic logout** - Secure cleanup when session expires
+- **Password hashing** using **bcrypt** (industry standard, 10 rounds)
+- **Account lockout** after 5 failed login attempts (15-minute duration)
+- **Password strength validation** (8+ chars, uppercase, lowercase, digit, special)
+- **SQL injection protection** via parameterized queries
+- **Complete audit trail** of all transactions
+- **170 security tests** with 83% code coverage
+
+⚠️ **Still Educational/Demo**
+- No SSL/TLS for database connections (use file-based SQLite)
+- 2FA not yet implemented (planned for Phase 1 continuation)
+- For production: add SSL/TLS, 2FA, encryption at rest, and professional security audit
 
 ## Future Enhancements
 
-See `instructions.md` for the complete development roadmap, including:
-- Data visualization with charts
-- Automated interest calculations
-- Budgeting tools
-- Monthly statements (PDF)
-- Bill payment scheduling
-- Investment tracking
-- Mobile-responsive design
-- API integration
+See [`docs/RoadMap.md`](docs/RoadMap.md) for the complete strategic development plan, including:
+- **Phase 1** (In Progress): ~~Session timeout~~, 2FA, password expiration, enhanced audit logs
+- **Phase 2**: Budgeting system, savings goals, recurring transactions
+- **Phase 3**: PDF statements, advanced reporting, tax preparation
+- **Phase 4**: Theme toggle, accessibility improvements, localization
+- **Phase 5**: Loan management, investment portfolio, multi-currency
+- **Phase 6**: Web version (Flask), mobile app, API platform
+
+## Documentation
+
+All comprehensive guides are in the [`docs/`](docs/) directory:
+
+| Document | Description |
+|----------|-------------|
+| [QUICKSTART.md](docs/QUICKSTART.md) | Get started in 60 seconds |
+| [RoadMap.md](docs/RoadMap.md) | Strategic development plan with 6 phases |
+| [INSTALLATION.md](docs/INSTALLATION.md) | Detailed installation guide for all platforms |
+| [TESTING.md](docs/TESTING.md) | Testing guide and best practices |
+| [SECURITY.md](docs/SECURITY.md) | Security features (sessions, bcrypt, lockout) |
+| [INTEREST.md](docs/INTEREST.md) | Interest automation system documentation |
+| [RELEASE_NOTES_V2.5.md](docs/RELEASE_NOTES_V2.5.md) | Latest version changelog (Session Management) |
+| [RELEASE_NOTES_V2.4.md](docs/RELEASE_NOTES_V2.4.md) | Previous version (bcrypt, lockout) |
+| [CLEANUP_SUMMARY.md](docs/CLEANUP_SUMMARY.md) | Recent refactoring documentation |
 
 ## Technical Details
 

@@ -2,6 +2,7 @@
 Integration Tests
 Tests complete workflows combining multiple components
 """
+
 import pytest
 from models.account import create_account
 from database.db_manager import DatabaseManager
@@ -18,13 +19,13 @@ class TestUserRegistrationWorkflow:
             username="newuser",
             password="password123",
             full_name="New User",
-            email="new@example.com"
+            email="new@example.com",
         )
 
         assert user_id is not None
 
         # Step 2: Create default checking account
-        account_id, account_number = temp_db.create_account(user_id, 'checking', 0.0)
+        account_id, account_number = temp_db.create_account(user_id, "checking", 0.0)
 
         assert account_id is not None
 
@@ -35,7 +36,7 @@ class TestUserRegistrationWorkflow:
         # Step 4: Verify account exists
         accounts = temp_db.get_user_accounts(user_id)
         assert len(accounts) == 1
-        assert accounts[0]['account_type'] == 'checking'
+        assert accounts[0]["account_type"] == "checking"
 
 
 class TestBankingOperationsWorkflow:
@@ -46,19 +47,19 @@ class TestBankingOperationsWorkflow:
         """Test deposit and withdrawal workflow."""
         db, user_id, accounts = db_with_accounts
 
-        checking_id = accounts['checking']['id']
+        checking_id = accounts["checking"]["id"]
 
         # Get initial balance
         account = db.get_account(checking_id)
-        initial_balance = account['balance']
+        initial_balance = account["balance"]
 
         # Create account object
         checking_account = create_account(
-            'checking',
+            "checking",
             checking_id,
-            accounts['checking']['number'],
+            accounts["checking"]["number"],
             "Test User",
-            initial_balance
+            initial_balance,
         )
 
         # Step 1: Make a deposit
@@ -67,7 +68,9 @@ class TestBankingOperationsWorkflow:
 
         # Update database
         db.update_balance(checking_id, checking_account.balance)
-        db.add_transaction(checking_id, 'Deposit', 500.0, 'Salary', checking_account.balance)
+        db.add_transaction(
+            checking_id, "Deposit", 500.0, "Salary", checking_account.balance
+        )
 
         # Step 2: Make a withdrawal
         success, message = checking_account.withdraw(200.0)
@@ -75,12 +78,14 @@ class TestBankingOperationsWorkflow:
 
         # Update database
         db.update_balance(checking_id, checking_account.balance)
-        db.add_transaction(checking_id, 'Withdrawal', 200.0, 'Shopping', checking_account.balance)
+        db.add_transaction(
+            checking_id, "Withdrawal", 200.0, "Shopping", checking_account.balance
+        )
 
         # Step 3: Verify final balance
         account = db.get_account(checking_id)
         expected_balance = initial_balance + 500.0 - 200.0
-        assert account['balance'] == expected_balance
+        assert account["balance"] == expected_balance
 
         # Step 4: Verify transaction history
         transactions = db.get_transactions(checking_id)
@@ -91,15 +96,15 @@ class TestBankingOperationsWorkflow:
         """Test transfer workflow between accounts."""
         db, user_id, accounts = db_with_accounts
 
-        from_id = accounts['checking']['id']
-        to_id = accounts['savings']['id']
+        from_id = accounts["checking"]["id"]
+        to_id = accounts["savings"]["id"]
 
         # Get initial balances
         from_account = db.get_account(from_id)
         to_account = db.get_account(to_id)
 
-        initial_from = from_account['balance']
-        initial_to = to_account['balance']
+        initial_from = from_account["balance"]
+        initial_to = to_account["balance"]
 
         # Perform transfer
         transfer_amount = 300.0
@@ -112,15 +117,15 @@ class TestBankingOperationsWorkflow:
         from_account = db.get_account(from_id)
         to_account = db.get_account(to_id)
 
-        assert from_account['balance'] == initial_from - transfer_amount
-        assert to_account['balance'] == initial_to + transfer_amount
+        assert from_account["balance"] == initial_from - transfer_amount
+        assert to_account["balance"] == initial_to + transfer_amount
 
         # Verify transaction records
         from_transactions = db.get_transactions(from_id)
         to_transactions = db.get_transactions(to_id)
 
-        assert any(t['transaction_type'] == 'Transfer Out' for t in from_transactions)
-        assert any(t['transaction_type'] == 'Transfer In' for t in to_transactions)
+        assert any(t["transaction_type"] == "Transfer Out" for t in from_transactions)
+        assert any(t["transaction_type"] == "Transfer In" for t in to_transactions)
 
 
 class TestSavingsAccountWorkflow:
@@ -131,17 +136,17 @@ class TestSavingsAccountWorkflow:
         """Test savings account withdrawal limit over time."""
         db, user_id, accounts = db_with_accounts
 
-        savings_id = accounts['savings']['id']
+        savings_id = accounts["savings"]["id"]
         account_data = db.get_account(savings_id)
 
         # Create savings account object
         savings = create_account(
-            'savings',
+            "savings",
             savings_id,
-            accounts['savings']['number'],
+            accounts["savings"]["number"],
             "Test User",
-            account_data['balance'],
-            interest_rate=2.0
+            account_data["balance"],
+            interest_rate=2.0,
         )
 
         # Make 6 withdrawals (monthly limit)
@@ -150,7 +155,9 @@ class TestSavingsAccountWorkflow:
             assert success is True
 
             db.update_balance(savings_id, savings.balance)
-            db.add_transaction(savings_id, 'Withdrawal', 100.0, 'Other', savings.balance)
+            db.add_transaction(
+                savings_id, "Withdrawal", 100.0, "Other", savings.balance
+            )
 
         # 7th withdrawal should fail
         success, message = savings.withdraw(100.0)
@@ -169,17 +176,17 @@ class TestSavingsAccountWorkflow:
         """Test applying interest to savings account."""
         db, user_id, accounts = db_with_accounts
 
-        savings_id = accounts['savings']['id']
+        savings_id = accounts["savings"]["id"]
         account_data = db.get_account(savings_id)
 
         # Create savings account object
         savings = create_account(
-            'savings',
+            "savings",
             savings_id,
-            accounts['savings']['number'],
+            accounts["savings"]["number"],
             "Test User",
-            account_data['balance'],
-            interest_rate=2.0
+            account_data["balance"],
+            interest_rate=2.0,
         )
 
         initial_balance = savings.balance
@@ -191,11 +198,13 @@ class TestSavingsAccountWorkflow:
         # Update database
         interest_amount = savings.balance - initial_balance
         db.update_balance(savings_id, savings.balance)
-        db.add_transaction(savings_id, 'Interest', interest_amount, 'Interest', savings.balance)
+        db.add_transaction(
+            savings_id, "Interest", interest_amount, "Interest", savings.balance
+        )
 
         # Verify balance increased
         account_data = db.get_account(savings_id)
-        assert account_data['balance'] > initial_balance
+        assert account_data["balance"] > initial_balance
 
 
 class TestCreditAccountWorkflow:
@@ -206,17 +215,17 @@ class TestCreditAccountWorkflow:
         """Test making purchases and payments on credit account."""
         db, user_id, accounts = db_with_accounts
 
-        credit_id = accounts['credit']['id']
+        credit_id = accounts["credit"]["id"]
         account_data = db.get_account(credit_id)
 
         # Create credit account object
         credit = create_account(
-            'credit',
+            "credit",
             credit_id,
-            accounts['credit']['number'],
+            accounts["credit"]["number"],
             "Test User",
-            account_data['balance'],
-            credit_limit=5000.0
+            account_data["balance"],
+            credit_limit=5000.0,
         )
 
         # Step 1: Make a purchase
@@ -225,7 +234,9 @@ class TestCreditAccountWorkflow:
         assert credit.balance == -1000.0
 
         db.update_balance(credit_id, credit.balance)
-        db.add_transaction(credit_id, 'Credit Purchase', 1000.0, 'Shopping', credit.balance)
+        db.add_transaction(
+            credit_id, "Credit Purchase", 1000.0, "Shopping", credit.balance
+        )
 
         # Step 2: Make another purchase
         success, message = credit.withdraw(500.0)
@@ -233,7 +244,9 @@ class TestCreditAccountWorkflow:
         assert credit.balance == -1500.0
 
         db.update_balance(credit_id, credit.balance)
-        db.add_transaction(credit_id, 'Credit Purchase', 500.0, 'Entertainment', credit.balance)
+        db.add_transaction(
+            credit_id, "Credit Purchase", 500.0, "Entertainment", credit.balance
+        )
 
         # Step 3: Make a payment
         success, message = credit.deposit(750.0)
@@ -241,11 +254,11 @@ class TestCreditAccountWorkflow:
         assert credit.balance == -750.0
 
         db.update_balance(credit_id, credit.balance)
-        db.add_transaction(credit_id, 'Payment', 750.0, 'Payment', credit.balance)
+        db.add_transaction(credit_id, "Payment", 750.0, "Payment", credit.balance)
 
         # Verify final balance
         account_data = db.get_account(credit_id)
-        assert account_data['balance'] == -750.0
+        assert account_data["balance"] == -750.0
 
         # Verify transaction history
         transactions = db.get_transactions(credit_id)
@@ -261,22 +274,28 @@ class TestMultiAccountWorkflow:
         db, user_id = db_with_user
 
         # Create multiple accounts
-        checking1_id, checking1_num = db.create_account(user_id, 'checking', 1000.0)
-        checking2_id, checking2_num = db.create_account(user_id, 'checking', 2000.0)
-        savings_id, savings_num = db.create_account(user_id, 'savings', 5000.0)
+        checking1_id, checking1_num = db.create_account(user_id, "checking", 1000.0)
+        checking2_id, checking2_num = db.create_account(user_id, "checking", 2000.0)
+        savings_id, savings_num = db.create_account(user_id, "savings", 5000.0)
 
         # Verify all accounts exist
         accounts = db.get_user_accounts(user_id)
         assert len(accounts) == 3
 
         # Perform operations on each account
-        db.add_transaction(checking1_id, 'Deposit', 500.0, 'Salary', 1500.0, category='Income')
+        db.add_transaction(
+            checking1_id, "Deposit", 500.0, "Salary", 1500.0, category="Income"
+        )
         db.update_balance(checking1_id, 1500.0)
 
-        db.add_transaction(checking2_id, 'Withdrawal', 200.0, 'Shopping', 1800.0, category='Shopping')
+        db.add_transaction(
+            checking2_id, "Withdrawal", 200.0, "Shopping", 1800.0, category="Shopping"
+        )
         db.update_balance(checking2_id, 1800.0)
 
-        db.add_transaction(savings_id, 'Deposit', 1000.0, 'Savings', 6000.0, category='Savings')
+        db.add_transaction(
+            savings_id, "Deposit", 1000.0, "Savings", 6000.0, category="Savings"
+        )
         db.update_balance(savings_id, 6000.0)
 
         # Transfer between accounts
@@ -285,7 +304,7 @@ class TestMultiAccountWorkflow:
 
         # Verify final state
         accounts = db.get_user_accounts(user_id)
-        total_balance = sum(acc['balance'] for acc in accounts)
+        total_balance = sum(acc["balance"] for acc in accounts)
 
         # Total should be: 1500 - 400 + 1800 + 6000 + 400 = 9300
         assert total_balance == 9300.0
@@ -299,9 +318,13 @@ class TestDataPersistenceWorkflow:
     def test_data_persists_across_sessions(self, temp_db):
         """Test data persists when database is reopened."""
         # Session 1: Create user and account
-        user_id = temp_db.create_user("persist_test", "password", "Persist User", "persist@test.com")
-        account_id, account_num = temp_db.create_account(user_id, 'checking', 1000.0)
-        temp_db.add_transaction(account_id, 'Deposit', 500.0, 'Salary', 1500.0, category='Income')
+        user_id = temp_db.create_user(
+            "persist_test", "password", "Persist User", "persist@test.com"
+        )
+        account_id, account_num = temp_db.create_account(user_id, "checking", 1000.0)
+        temp_db.add_transaction(
+            account_id, "Deposit", 500.0, "Salary", 1500.0, category="Income"
+        )
         temp_db.update_balance(account_id, 1500.0)  # Update actual account balance
 
         # Get database path before closing
@@ -319,7 +342,7 @@ class TestDataPersistenceWorkflow:
 
         accounts = db2.get_user_accounts(user_id)
         assert len(accounts) == 1
-        assert accounts[0]['balance'] == 1500.0
+        assert accounts[0]["balance"] == 1500.0
 
         transactions = db2.get_transactions(account_id)
         assert len(transactions) >= 1
@@ -335,8 +358,8 @@ class TestErrorHandlingWorkflow:
         """Test workflow when operations fail due to insufficient funds."""
         db, user_id, accounts = db_with_accounts
 
-        checking_id = accounts['checking']['id']
-        savings_id = accounts['savings']['id']
+        checking_id = accounts["checking"]["id"]
+        savings_id = accounts["savings"]["id"]
 
         # Try to transfer more than available
         success, message = db.create_transfer(checking_id, savings_id, 5000.0)
@@ -348,25 +371,25 @@ class TestErrorHandlingWorkflow:
         checking = db.get_account(checking_id)
         savings = db.get_account(savings_id)
 
-        assert checking['balance'] == 1000.0
-        assert savings['balance'] == 5000.0
+        assert checking["balance"] == 1000.0
+        assert savings["balance"] == 5000.0
 
     @pytest.mark.integration
     def test_invalid_operation_workflow(self, db_with_accounts):
         """Test workflow with invalid operations."""
         db, user_id, accounts = db_with_accounts
 
-        savings_id = accounts['savings']['id']
+        savings_id = accounts["savings"]["id"]
         account_data = db.get_account(savings_id)
 
         # Create savings account
         savings = create_account(
-            'savings',
+            "savings",
             savings_id,
-            accounts['savings']['number'],
+            accounts["savings"]["number"],
             "Test User",
-            account_data['balance'],
-            interest_rate=2.0
+            account_data["balance"],
+            interest_rate=2.0,
         )
 
         # Try to withdraw below minimum balance
@@ -387,30 +410,57 @@ class TestReportingWorkflow:
         """Test analyzing spending patterns."""
         db, user_id, accounts = db_with_accounts
 
-        checking_id = accounts['checking']['id']
+        checking_id = accounts["checking"]["id"]
 
         # Add varied spending transactions
-        db.add_transaction(checking_id, 'Withdrawal', 100.0, 'Food purchase', 900.0, category='Food & Dining')
-        db.add_transaction(checking_id, 'Withdrawal', 150.0, 'Restaurant', 750.0, category='Food & Dining')
-        db.add_transaction(checking_id, 'Withdrawal', 75.0, 'Store purchase', 675.0, category='Shopping')
-        db.add_transaction(checking_id, 'Withdrawal', 50.0, 'Gas', 625.0, category='Transportation')
-        db.add_transaction(checking_id, 'Deposit', 500.0, 'Salary', 1125.0, category='Income')
+        db.add_transaction(
+            checking_id,
+            "Withdrawal",
+            100.0,
+            "Food purchase",
+            900.0,
+            category="Food & Dining",
+        )
+        db.add_transaction(
+            checking_id,
+            "Withdrawal",
+            150.0,
+            "Restaurant",
+            750.0,
+            category="Food & Dining",
+        )
+        db.add_transaction(
+            checking_id,
+            "Withdrawal",
+            75.0,
+            "Store purchase",
+            675.0,
+            category="Shopping",
+        )
+        db.add_transaction(
+            checking_id, "Withdrawal", 50.0, "Gas", 625.0, category="Transportation"
+        )
+        db.add_transaction(
+            checking_id, "Deposit", 500.0, "Salary", 1125.0, category="Income"
+        )
 
         # Get statistics
         stats = db.get_account_statistics(checking_id)
 
         # Note: Account was created with 1000.0 initial deposit, plus 500.0 = 1500.0 total
-        assert stats['total_deposits'] == 1500.0
-        assert stats['total_withdrawals'] == 375.0
-        assert stats['total_transactions'] == 6  # 1 initial + 5 added
+        assert stats["total_deposits"] == 1500.0
+        assert stats["total_withdrawals"] == 375.0
+        assert stats["total_transactions"] == 6  # 1 initial + 5 added
 
         # Get spending by category
         spending = db.get_spending_by_category(checking_id)
 
-        food_spending = next((s for s in spending if s['category'] == 'Food & Dining'), None)
+        food_spending = next(
+            (s for s in spending if s["category"] == "Food & Dining"), None
+        )
         assert food_spending is not None
-        assert food_spending['total'] == 250.0
+        assert food_spending["total"] == 250.0
 
         # Get transaction history
-        transactions = db.get_transactions(checking_id, category='Food & Dining')
+        transactions = db.get_transactions(checking_id, category="Food & Dining")
         assert len(transactions) == 2

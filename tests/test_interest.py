@@ -13,7 +13,7 @@ class TestInterestScheduler:
     def test_calculate_days_since_never_applied(self):
         """Test days calculation when interest was never applied."""
         days = InterestScheduler.calculate_days_since_last_interest(None)
-        assert days == float('inf')
+        assert days == float("inf")
 
     def test_calculate_days_since_recent(self):
         """Test days calculation with recent interest application."""
@@ -49,7 +49,9 @@ class TestInterestScheduler:
         annual_rate = 0.02  # 2% annual
         days = 30
 
-        interest = InterestScheduler.calculate_interest_amount(balance, annual_rate, days)
+        interest = InterestScheduler.calculate_interest_amount(
+            balance, annual_rate, days
+        )
 
         # Expected: 1000 * (0.02 / 365) * 30 = 1.64
         assert interest > 1.6
@@ -147,26 +149,26 @@ class TestInterestScheduler:
         """Test interest history summary with no transactions."""
         summary = InterestScheduler.get_interest_history_summary([])
 
-        assert summary['total_interest_earned'] == 0
-        assert summary['interest_applications'] == 0
-        assert summary['average_interest'] == 0
-        assert summary['last_interest_date'] is None
+        assert summary["total_interest_earned"] == 0
+        assert summary["interest_applications"] == 0
+        assert summary["average_interest"] == 0
+        assert summary["last_interest_date"] is None
 
     def test_get_interest_history_summary_with_interest(self):
         """Test interest history summary with interest transactions."""
         transactions = [
-            {'category': 'Interest', 'amount': 10.50, 'timestamp': '2025-10-01'},
-            {'category': 'Interest', 'amount': 11.25, 'timestamp': '2025-09-01'},
-            {'category': 'Deposit', 'amount': 1000, 'timestamp': '2025-08-15'}
+            {"category": "Interest", "amount": 10.50, "timestamp": "2025-10-01"},
+            {"category": "Interest", "amount": 11.25, "timestamp": "2025-09-01"},
+            {"category": "Deposit", "amount": 1000, "timestamp": "2025-08-15"},
         ]
 
         summary = InterestScheduler.get_interest_history_summary(transactions)
 
-        assert summary['total_interest_earned'] == 21.75
-        assert summary['interest_applications'] == 2
+        assert summary["total_interest_earned"] == 21.75
+        assert summary["interest_applications"] == 2
         # Allow for rounding differences
-        assert abs(summary['average_interest'] - 10.875) < 0.01
-        assert summary['last_interest_date'] == '2025-10-01'
+        assert abs(summary["average_interest"] - 10.875) < 0.01
+        assert summary["last_interest_date"] == "2025-10-01"
 
 
 class TestInterestDatabaseIntegration:
@@ -185,7 +187,7 @@ class TestInterestDatabaseIntegration:
         # Create user and account
         user_id = db.create_user("testuser", "TestPass123!", "Test User")
         account_id, account_number = db.create_account(
-            user_id, 'Savings', 1000, interest_rate=0.02
+            user_id, "Savings", 1000, interest_rate=0.02
         )
 
         # Update last interest date
@@ -195,7 +197,7 @@ class TestInterestDatabaseIntegration:
 
         # Verify it was updated
         account_data = db.get_account(account_id)
-        assert account_data['last_interest_date'] == now
+        assert account_data["last_interest_date"] == now
 
     def test_get_savings_accounts_for_interest(self, db):
         """Test getting savings accounts eligible for interest."""
@@ -203,15 +205,15 @@ class TestInterestDatabaseIntegration:
         user_id = db.create_user("testuser", "TestPass123!", "Test User")
 
         # Create multiple accounts
-        db.create_account(user_id, 'Checking', 500)
-        savings1_id, _ = db.create_account(user_id, 'Savings', 1000, interest_rate=0.02)
-        savings2_id, _ = db.create_account(user_id, 'Savings', 2000, interest_rate=0.03)
+        db.create_account(user_id, "Checking", 500)
+        savings1_id, _ = db.create_account(user_id, "Savings", 1000, interest_rate=0.02)
+        savings2_id, _ = db.create_account(user_id, "Savings", 2000, interest_rate=0.03)
 
         # Get savings accounts
         savings_accounts = db.get_savings_accounts_for_interest(user_id)
 
         assert len(savings_accounts) == 2
-        account_ids = [acc['account_id'] for acc in savings_accounts]
+        account_ids = [acc["account_id"] for acc in savings_accounts]
         assert savings1_id in account_ids
         assert savings2_id in account_ids
 
@@ -222,7 +224,7 @@ class TestInterestDatabaseIntegration:
             account_number="1234567890",
             account_holder="Test User",
             balance=1000,
-            interest_rate=0.02
+            interest_rate=0.02,
         )
 
         # Apply interest for 30 days
@@ -246,7 +248,7 @@ class TestInterestDatabaseIntegration:
             account_number="1234567890",
             account_holder="Test User",
             balance=0,
-            interest_rate=0.02
+            interest_rate=0.02,
         )
 
         success, message = account.apply_interest(days=30)

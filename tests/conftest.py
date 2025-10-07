@@ -2,6 +2,7 @@
 Pytest Configuration and Shared Fixtures
 Provides reusable test fixtures for database, accounts, and test data
 """
+
 import pytest
 import os
 import tempfile
@@ -13,7 +14,7 @@ from models.account import CheckingAccount, SavingsAccount, CreditAccount
 def temp_db():
     """Create a temporary database for testing."""
     # Create temporary database file
-    fd, path = tempfile.mkstemp(suffix='.db')
+    fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
     db = DatabaseManager(path)
@@ -32,7 +33,7 @@ def db_with_user(temp_db):
         username="testuser",
         password="testpass123",
         full_name="Test User",
-        email="test@example.com"
+        email="test@example.com",
     )
 
     return temp_db, user_id
@@ -44,18 +45,18 @@ def db_with_accounts(db_with_user):
     db, user_id = db_with_user
 
     # Create checking account
-    checking_id, checking_num = db.create_account(user_id, 'checking', 1000.0)
+    checking_id, checking_num = db.create_account(user_id, "checking", 1000.0)
 
     # Create savings account
-    savings_id, savings_num = db.create_account(user_id, 'savings', 5000.0)
+    savings_id, savings_num = db.create_account(user_id, "savings", 5000.0)
 
     # Create credit account
-    credit_id, credit_num = db.create_account(user_id, 'credit', 0.0)
+    credit_id, credit_num = db.create_account(user_id, "credit", 0.0)
 
     accounts = {
-        'checking': {'id': checking_id, 'number': checking_num},
-        'savings': {'id': savings_id, 'number': savings_num},
-        'credit': {'id': credit_id, 'number': credit_num}
+        "checking": {"id": checking_id, "number": checking_num},
+        "savings": {"id": savings_id, "number": savings_num},
+        "credit": {"id": credit_id, "number": credit_num},
     }
 
     return db, user_id, accounts
@@ -68,7 +69,7 @@ def checking_account():
         account_id=1,
         account_number="CHK001",
         account_holder="Test User",
-        balance=1000.0
+        balance=1000.0,
     )
 
 
@@ -80,7 +81,7 @@ def savings_account():
         account_number="SAV001",
         account_holder="Test User",
         balance=5000.0,
-        interest_rate=2.0
+        interest_rate=2.0,
     )
 
 
@@ -92,7 +93,7 @@ def credit_account():
         account_number="CRD001",
         account_holder="Test User",
         balance=0.0,
-        credit_limit=5000.0
+        credit_limit=5000.0,
     )
 
 
@@ -100,9 +101,9 @@ def credit_account():
 def sample_transactions():
     """Sample transaction data for testing."""
     return [
-        {'type': 'Deposit', 'amount': 500.0, 'category': 'Salary'},
-        {'type': 'Withdrawal', 'amount': 100.0, 'category': 'Food & Dining'},
-        {'type': 'Withdrawal', 'amount': 50.0, 'category': 'Transportation'},
-        {'type': 'Deposit', 'amount': 200.0, 'category': 'Other'},
-        {'type': 'Withdrawal', 'amount': 75.0, 'category': 'Shopping'}
+        {"type": "Deposit", "amount": 500.0, "category": "Salary"},
+        {"type": "Withdrawal", "amount": 100.0, "category": "Food & Dining"},
+        {"type": "Withdrawal", "amount": 50.0, "category": "Transportation"},
+        {"type": "Deposit", "amount": 200.0, "category": "Other"},
+        {"type": "Withdrawal", "amount": 75.0, "category": "Shopping"},
     ]

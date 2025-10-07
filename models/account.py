@@ -6,8 +6,13 @@ from typing import Tuple, List, Dict
 class Account(ABC):
     """Abstract base class for all account types."""
 
-    def __init__(self, account_id: int, account_number: str, account_holder: str,
-                 balance: float = 0):
+    def __init__(
+        self,
+        account_id: int,
+        account_number: str,
+        account_holder: str,
+        balance: float = 0,
+    ):
         self.account_id = account_id
         self.account_number = account_number
         self.account_holder = account_holder
@@ -30,7 +35,7 @@ class Account(ABC):
             return False, "Deposit amount must be positive."
 
         self._balance += amount
-        self._record_transaction('Deposit', amount, category)
+        self._record_transaction("Deposit", amount, category)
         return True, f"Deposited ${amount:.2f}. New balance: ${self._balance:.2f}"
 
     @abstractmethod
@@ -38,16 +43,19 @@ class Account(ABC):
         """Withdraw money from account. Must be implemented by subclasses."""
         pass
 
-    def _record_transaction(self, transaction_type: str, amount: float,
-                           category: str = None):
+    def _record_transaction(
+        self, transaction_type: str, amount: float, category: str = None
+    ):
         """Record a transaction in history."""
-        self.transaction_history.append({
-            'type': transaction_type,
-            'amount': amount,
-            'category': category,
-            'balance': self._balance,
-            'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
+        self.transaction_history.append(
+            {
+                "type": transaction_type,
+                "amount": amount,
+                "category": category,
+                "balance": self._balance,
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
 
     def get_balance_formatted(self) -> str:
         """Get formatted balance string."""
@@ -64,8 +72,14 @@ class Account(ABC):
 class CheckingAccount(Account):
     """Checking account with overdraft protection."""
 
-    def __init__(self, account_id: int, account_number: str, account_holder: str,
-                 balance: float = 0, overdraft_limit: float = 500):
+    def __init__(
+        self,
+        account_id: int,
+        account_number: str,
+        account_holder: str,
+        balance: float = 0,
+        overdraft_limit: float = 500,
+    ):
         super().__init__(account_id, account_number, account_holder, balance)
         self.overdraft_limit = overdraft_limit
 
@@ -76,13 +90,19 @@ class CheckingAccount(Account):
 
         # Check if withdrawal would exceed overdraft limit
         if self._balance - amount < -self.overdraft_limit:
-            return False, f"Insufficient funds. Overdraft limit: ${self.overdraft_limit:.2f}"
+            return (
+                False,
+                f"Insufficient funds. Overdraft limit: ${self.overdraft_limit:.2f}",
+            )
 
         self._balance -= amount
-        self._record_transaction('Withdrawal', amount, category)
+        self._record_transaction("Withdrawal", amount, category)
 
         if self._balance < 0:
-            return True, f"Withdrew ${amount:.2f}. Warning: Overdraft balance: ${self._balance:.2f}"
+            return (
+                True,
+                f"Withdrew ${amount:.2f}. Warning: Overdraft balance: ${self._balance:.2f}",
+            )
 
         return True, f"Withdrew ${amount:.2f}. New balance: ${self._balance:.2f}"
 
@@ -94,9 +114,15 @@ class CheckingAccount(Account):
 class SavingsAccount(Account):
     """Savings account with interest calculation."""
 
-    def __init__(self, account_id: int, account_number: str, account_holder: str,
-                 balance: float = 0, interest_rate: float = 0.02,
-                 minimum_balance: float = 100):
+    def __init__(
+        self,
+        account_id: int,
+        account_number: str,
+        account_holder: str,
+        balance: float = 0,
+        interest_rate: float = 0.02,
+        minimum_balance: float = 100,
+    ):
         super().__init__(account_id, account_number, account_holder, balance)
         self.interest_rate = interest_rate  # Annual interest rate
         self.minimum_balance = minimum_balance
@@ -110,19 +136,27 @@ class SavingsAccount(Account):
 
         # Check withdrawal limit
         if self.withdrawal_count >= self.monthly_withdrawal_limit:
-            return False, f"Monthly withdrawal limit ({self.monthly_withdrawal_limit}) reached."
+            return (
+                False,
+                f"Monthly withdrawal limit ({self.monthly_withdrawal_limit}) reached.",
+            )
 
         # Check minimum balance
         if self._balance - amount < self.minimum_balance:
-            return False, f"Withdrawal would violate minimum balance of ${self.minimum_balance:.2f}"
+            return (
+                False,
+                f"Withdrawal would violate minimum balance of ${self.minimum_balance:.2f}",
+            )
 
         self._balance -= amount
         self.withdrawal_count += 1
-        self._record_transaction('Withdrawal', amount, category)
+        self._record_transaction("Withdrawal", amount, category)
 
         remaining_withdrawals = self.monthly_withdrawal_limit - self.withdrawal_count
-        return True, (f"Withdrew ${amount:.2f}. New balance: ${self._balance:.2f}\n"
-                     f"Remaining withdrawals this month: {remaining_withdrawals}")
+        return True, (
+            f"Withdrew ${amount:.2f}. New balance: ${self._balance:.2f}\n"
+            f"Remaining withdrawals this month: {remaining_withdrawals}"
+        )
 
     def calculate_interest(self, days: int = 30) -> float:
         """Calculate interest for specified number of days."""
@@ -135,8 +169,11 @@ class SavingsAccount(Account):
         interest = self.calculate_interest(days)
         if interest > 0:
             self._balance += interest
-            self._record_transaction('Interest', interest, 'Interest')
-            return True, f"Interest applied: ${interest:.2f}. New balance: ${self._balance:.2f}"
+            self._record_transaction("Interest", interest, "Interest")
+            return (
+                True,
+                f"Interest applied: ${interest:.2f}. New balance: ${self._balance:.2f}",
+            )
         return False, "No interest to apply."
 
     def reset_withdrawal_count(self):
@@ -147,9 +184,15 @@ class SavingsAccount(Account):
 class CreditAccount(Account):
     """Credit account with credit limit and interest on borrowed amounts."""
 
-    def __init__(self, account_id: int, account_number: str, account_holder: str,
-                 balance: float = 0, credit_limit: float = 5000,
-                 interest_rate: float = 0.18):
+    def __init__(
+        self,
+        account_id: int,
+        account_number: str,
+        account_holder: str,
+        balance: float = 0,
+        credit_limit: float = 5000,
+        interest_rate: float = 0.18,
+    ):
         super().__init__(account_id, account_number, account_holder, balance)
         self.credit_limit = credit_limit
         self.interest_rate = interest_rate  # Annual interest rate
@@ -166,11 +209,13 @@ class CreditAccount(Account):
             return False, f"Exceeds credit limit. Available credit: ${available:.2f}"
 
         self._balance -= amount
-        self._record_transaction('Credit Purchase', amount, category)
+        self._record_transaction("Credit Purchase", amount, category)
 
         available_credit = self.credit_limit - abs(self._balance)
-        return True, (f"Charged ${amount:.2f}. Current balance: ${self._balance:.2f}\n"
-                     f"Available credit: ${available_credit:.2f}")
+        return True, (
+            f"Charged ${amount:.2f}. Current balance: ${self._balance:.2f}\n"
+            f"Available credit: ${available_credit:.2f}"
+        )
 
     def deposit(self, amount: float, category: str = None) -> Tuple[bool, str]:
         """Make a payment toward credit balance."""
@@ -178,14 +223,20 @@ class CreditAccount(Account):
             return False, "Payment amount must be positive."
 
         self._balance += amount
-        self._record_transaction('Payment', amount, category)
+        self._record_transaction("Payment", amount, category)
 
         if self._balance > 0:
-            return True, f"Payment received: ${amount:.2f}. Credit balance: ${abs(self._balance):.2f} (overpaid)"
+            return (
+                True,
+                f"Payment received: ${amount:.2f}. Credit balance: ${abs(self._balance):.2f} (overpaid)",
+            )
         elif self._balance == 0:
             return True, f"Payment received: ${amount:.2f}. Account paid in full!"
         else:
-            return True, f"Payment received: ${amount:.2f}. Remaining balance: ${abs(self._balance):.2f}"
+            return (
+                True,
+                f"Payment received: ${amount:.2f}. Remaining balance: ${abs(self._balance):.2f}",
+            )
 
     def get_available_credit(self) -> float:
         """Get available credit."""
@@ -205,8 +256,11 @@ class CreditAccount(Account):
         interest = self.calculate_interest(days)
         if interest > 0:
             self._balance -= interest  # Increase debt
-            self._record_transaction('Interest Charge', interest, 'Interest')
-            return True, f"Interest charged: ${interest:.2f}. New balance: ${self._balance:.2f}"
+            self._record_transaction("Interest Charge", interest, "Interest")
+            return (
+                True,
+                f"Interest charged: ${interest:.2f}. New balance: ${self._balance:.2f}",
+            )
         return False, "No interest charges."
 
     def get_balance_formatted(self) -> str:
@@ -216,19 +270,32 @@ class CreditAccount(Account):
         return f"${self._balance:.2f}"
 
 
-def create_account(account_type: str, account_id: int, account_number: str,
-                  account_holder: str, balance: float = 0,
-                  interest_rate: float = 0, credit_limit: float = 0) -> Account:
+def create_account(
+    account_type: str,
+    account_id: int,
+    account_number: str,
+    account_holder: str,
+    balance: float = 0,
+    interest_rate: float = 0,
+    credit_limit: float = 0,
+) -> Account:
     """Factory function to create appropriate account type."""
     account_type = account_type.lower()
 
-    if account_type == 'checking':
+    if account_type == "checking":
         return CheckingAccount(account_id, account_number, account_holder, balance)
-    elif account_type == 'savings':
-        return SavingsAccount(account_id, account_number, account_holder,
-                            balance, interest_rate)
-    elif account_type == 'credit':
-        return CreditAccount(account_id, account_number, account_holder,
-                           balance, credit_limit, interest_rate)
+    elif account_type == "savings":
+        return SavingsAccount(
+            account_id, account_number, account_holder, balance, interest_rate
+        )
+    elif account_type == "credit":
+        return CreditAccount(
+            account_id,
+            account_number,
+            account_holder,
+            balance,
+            credit_limit,
+            interest_rate,
+        )
     else:
         raise ValueError(f"Unknown account type: {account_type}")

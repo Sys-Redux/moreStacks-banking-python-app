@@ -22,7 +22,7 @@ class InterestScheduler:
             Number of days since last interest application
         """
         if not last_interest_date:
-            return float('inf')  # Never applied
+            return float("inf")  # Never applied
 
         last_date = datetime.fromisoformat(last_interest_date)
         now = datetime.now()
@@ -43,11 +43,15 @@ class InterestScheduler:
         if not last_interest_date:
             return True  # Never applied, should apply now
 
-        days_since = InterestScheduler.calculate_days_since_last_interest(last_interest_date)
+        days_since = InterestScheduler.calculate_days_since_last_interest(
+            last_interest_date
+        )
         return days_since >= InterestScheduler.INTEREST_PERIOD_DAYS
 
     @staticmethod
-    def calculate_interest_amount(balance: float, annual_rate: float, days: int = 30) -> float:
+    def calculate_interest_amount(
+        balance: float, annual_rate: float, days: int = 30
+    ) -> float:
         """
         Calculate interest amount for a given balance and rate.
         Uses simple interest calculation: Interest = Principal × Rate × Time
@@ -84,14 +88,18 @@ class InterestScheduler:
         """
         if not last_interest_date:
             # If never applied, next date is 30 days from now
-            return datetime.now() + timedelta(days=InterestScheduler.INTEREST_PERIOD_DAYS)
+            return datetime.now() + timedelta(
+                days=InterestScheduler.INTEREST_PERIOD_DAYS
+            )
 
         last_date = datetime.fromisoformat(last_interest_date)
         next_date = last_date + timedelta(days=InterestScheduler.INTEREST_PERIOD_DAYS)
 
         # If next date is in the past, calculate from current date
         if next_date < datetime.now():
-            return datetime.now() + timedelta(days=InterestScheduler.INTEREST_PERIOD_DAYS)
+            return datetime.now() + timedelta(
+                days=InterestScheduler.INTEREST_PERIOD_DAYS
+            )
 
         return next_date
 
@@ -161,21 +169,23 @@ class InterestScheduler:
             Dictionary with interest statistics
         """
         interest_transactions = [
-            t for t in transactions
-            if t.get('category') == 'Interest' or 'interest' in t.get('description', '').lower()
+            t
+            for t in transactions
+            if t.get("category") == "Interest"
+            or "interest" in t.get("description", "").lower()
         ]
 
-        total_interest = sum(t.get('amount', 0) for t in interest_transactions)
+        total_interest = sum(t.get("amount", 0) for t in interest_transactions)
         count = len(interest_transactions)
 
         last_interest = None
         if interest_transactions:
             # Transactions are sorted by timestamp DESC
-            last_interest = interest_transactions[0].get('timestamp')
+            last_interest = interest_transactions[0].get("timestamp")
 
         return {
-            'total_interest_earned': round(total_interest, 2),
-            'interest_applications': count,
-            'last_interest_date': last_interest,
-            'average_interest': round(total_interest / count, 2) if count > 0 else 0
+            "total_interest_earned": round(total_interest, 2),
+            "interest_applications": count,
+            "last_interest_date": last_interest,
+            "average_interest": round(total_interest / count, 2) if count > 0 else 0,
         }

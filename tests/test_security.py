@@ -18,7 +18,7 @@ class TestPasswordHashing:
         # Bcrypt hash should be a string
         assert isinstance(hashed, str)
         # Bcrypt hash should start with $2b$ (bcrypt identifier)
-        assert hashed.startswith('$2b$')
+        assert hashed.startswith("$2b$")
         # Bcrypt hash should be at least 60 characters
         assert len(hashed) >= 60
 
@@ -117,7 +117,11 @@ class TestPasswordValidator:
         strength = PasswordValidator.get_password_strength(password)
 
         # Very short passwords should be weak or medium
-        assert strength in ["Weak", "Medium", "Strong"]  # 8-char passwords can be Strong
+        assert strength in [
+            "Weak",
+            "Medium",
+            "Strong",
+        ]  # 8-char passwords can be Strong
 
     def test_password_strength_strong(self):
         """Test strong password strength rating."""
@@ -165,8 +169,7 @@ class TestAccountLockout:
 
         # Check that failed attempts was reset
         user_info = db.cursor.execute(
-            "SELECT failed_login_attempts FROM users WHERE user_id = ?",
-            (user_id,)
+            "SELECT failed_login_attempts FROM users WHERE user_id = ?", (user_id,)
         ).fetchone()
         assert user_info[0] == 0
 
@@ -182,8 +185,7 @@ class TestAccountLockout:
 
         # Check counter
         user_info = db.cursor.execute(
-            "SELECT failed_login_attempts FROM users WHERE user_id = ?",
-            (user_id,)
+            "SELECT failed_login_attempts FROM users WHERE user_id = ?", (user_id,)
         ).fetchone()
         assert user_info[0] == 3
 
@@ -213,11 +215,14 @@ class TestAccountLockout:
 
         # Simulate account locked 20 minutes ago
         past_time = datetime.now() - timedelta(minutes=20)
-        db.cursor.execute('''
+        db.cursor.execute(
+            """
             UPDATE users
             SET failed_login_attempts = 5, account_locked_until = ?
             WHERE user_id = ?
-        ''', (past_time.isoformat(), user_id))
+        """,
+            (past_time.isoformat(), user_id),
+        )
         db.conn.commit()
 
         # Account should no longer be locked
